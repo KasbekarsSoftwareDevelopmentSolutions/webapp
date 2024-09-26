@@ -1,3 +1,4 @@
+.DS_Store
 # IntelliJ IDEA-specific files
 .idea
 .idea/                     # Ignore all IntelliJ project-specific settings
@@ -12,7 +13,7 @@ logs/                       # Ignore application logs
 *.log                       # Ignore any log file
 
 # OS-generated files
-.DS_Store                   # macOS-specific file (common on macOS systems)
+# *.DS_Store                   # macOS-specific file (common on macOS systems)
 
 # Maven-specific files
 target/                     # Ignore Maven target directory where builds and compiled classes go

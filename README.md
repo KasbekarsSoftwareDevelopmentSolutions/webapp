@@ -58,9 +58,11 @@ Use the following command to clone the git repo:
 
 ## Project Configuration
 
+Create dir `src/main/resources` . Inside the dir `src/main/resources` create `application.properties`
 Update the MySQL connection settings in the `src/main/resources/application.properties` file to match your database configuration:
 
 ```properties
+spring.application.name=movieRetrievalWebApp
 # MySQL Connection Properties
 spring.datasource.url=jdbc:mysql://localhost:3306/dbname
 spring.datasource.username=username
@@ -73,7 +75,7 @@ spring.jpa.show-sql=true
 
 ## Running the Application
 
-1. Build the Project: Since the project uses Maven Wrapper (mvnw), you don’t need to install Maven globally. Open command prompt in the root dir of application. To build the project, run:
+1. Build the Project: Since the project uses Maven Wrapper (mvnw), you don’t need to install Maven globally. Open command prompt in the root dir of application (`webapp/movieRetrivalWebApp`). To build the project, run:
 
 ```bash
 ./mvnw clean install
