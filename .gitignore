@@ -1,4 +1,5 @@
 # IntelliJ IDEA-specific files
+.idea
 .idea/                     # Ignore all IntelliJ project-specific settings
 *.iws                       # Ignore workspace settings files
 *.iml                       # Ignore module files
