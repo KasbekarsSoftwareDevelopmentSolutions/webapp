@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/healthz")
 public class HealthController {
@@ -20,7 +22,9 @@ public class HealthController {
 
     @GetMapping
     public ResponseEntity<Void> healthCheck(HttpServletRequest request) {
-        if (request.getContentLength() > 0) {
+        // Check for query parameters
+        Map<String, String[]> queryParams = request.getParameterMap();
+        if (request.getContentLength() > 0 || !queryParams.isEmpty()) {
             return ResponseEntity.badRequest()
                     .header("Cache-Control", "no-cache", "no-store", "must-revalidate")
                     .header("Pragma", "no-cache")
