@@ -1,30 +1,37 @@
 package com.cloudcomputing.movieRetrievalWebApp.bootstrap;
 
-import com.cloudcomputing.movieRetrievalWebApp.model.Movie;
-import com.cloudcomputing.movieRetrievalWebApp.repository.MovieRepo;
+import com.cloudcomputing.movieRetrievalWebApp.model.User;
+import com.cloudcomputing.movieRetrievalWebApp.repository.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 @Component
 public class BootstrapCommandLineRunner implements CommandLineRunner {
 
     private static final Logger LOGGER = Logger.getLogger(BootstrapCommandLineRunner.class.getName());
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
+    private final UserRepo userRepo;
 
     @Autowired
-    private MovieRepo movieRepo;
+    public BootstrapCommandLineRunner(JdbcTemplate jdbcTemplate, UserRepo userRepo) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.userRepo = userRepo;
+    }
 
     @Override
     public void run(String... args) {
+        // PasswordEncoder will be passed as a parameter
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(); // Or use dependency injection if needed
+
         try {
             // Check if DB connection is successful
             jdbcTemplate.execute("SELECT 1");
@@ -34,13 +41,15 @@ public class BootstrapCommandLineRunner implements CommandLineRunner {
             List<String> existingTables = listExistingTables();
             LOGGER.info("Existing tables in the database: " + existingTables);
 
-            // Check if 'movies' table exists, create if not
-            if (!existingTables.contains("movies")) {
-                createMoviesTable();
+            // Check if 'users' table exists, create if not
+            if (!existingTables.contains("users")) {
+                createUsersTable();
+                seedUserData(passwordEncoder); // Pass the PasswordEncoder here
+            } else {
+                LOGGER.info("'users' table already exists.");
+                // Log existing data in the 'users' table
+                logExistingUserData();
             }
-
-            // Seed the database with initial data
-            seedData();
         } catch (DataAccessException e) {
             LOGGER.severe("Error connecting to the database: " + e.getMessage());
         }
@@ -53,38 +62,62 @@ public class BootstrapCommandLineRunner implements CommandLineRunner {
      */
     private List<String> listExistingTables() {
         String query = "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()";
-        List<String> tables = jdbcTemplate.queryForList(query, String.class);
-        return tables;
+        return jdbcTemplate.queryForList(query, String.class);
     }
 
     /**
-     * Creates the 'movies' table if it does not exist.
+     * Creates the 'users' table if it does not exist.
      */
-    private void createMoviesTable() {
-        String createTableQuery = "CREATE TABLE movies (" +
-                "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
-                "title VARCHAR(255) NOT NULL, " +
-                "genre VARCHAR(255) NOT NULL, " +
-                "release_year INT NOT NULL)";
+    private void createUsersTable() {
+        String createTableQuery = "CREATE TABLE users (" +
+                "user_id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                "email_address VARCHAR(255) NOT NULL UNIQUE, " +
+                "password VARCHAR(255) NOT NULL, " +
+                "first_name VARCHAR(255) NOT NULL, " +
+                "last_name VARCHAR(255), " +
+                "account_created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+                "account_updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)";
         jdbcTemplate.execute(createTableQuery);
-        LOGGER.info("Table 'movies' created successfully.");
+        LOGGER.info("Table 'users' created successfully.");
     }
 
     /**
-     * Seeds initial data into the 'movies' table.
+     * Seeds initial data into the 'users' table.
      */
-    private void seedData() {
-        List<Movie> movies = movieRepo.findAll();
+    private void seedUserData(PasswordEncoder passwordEncoder) {
+        List<User> users = userRepo.findAll();
 
         // Seed data only if table is empty
-        if (movies.isEmpty()) {
-            Movie movie1 = new Movie("The Shawshank Redemption", "Drama", 1994);
-            Movie movie2 = new Movie("The Godfather", "Crime", 1972);
-            movieRepo.save(movie1);
-            movieRepo.save(movie2);
-            LOGGER.info("Seed data added to 'movies' table.");
+        if (users.isEmpty()) {
+            User user1 = new User("user1@example.com", passwordEncoder.encode("password1"), "FirstName1", "LastName1");
+            User user2 = new User("user2@example.com", passwordEncoder.encode("password2"), "FirstName2", "LastName2");
+            userRepo.save(user1);
+            userRepo.save(user2);
+            LOGGER.info("Seed data added to 'users' table.");
         } else {
-            LOGGER.info("'movies' table already contains data.");
+            LOGGER.info("'users' table already contains data.");
+        }
+    }
+
+    /**
+     * Logs existing data in the 'users' table, showing the first 5 rows.
+     */
+    private void logExistingUserData() {
+        String query = "SELECT * FROM users LIMIT 5";
+        List<User> users = jdbcTemplate.query(query, (rs, rowNum) -> new User(
+                rs.getString("email_address"),
+                rs.getString("password"),
+                rs.getString("first_name"),
+                rs.getString("last_name")
+        ));
+
+        if (users.isEmpty()) {
+            LOGGER.info("'users' table is empty.");
+        } else {
+            LOGGER.info("Existing data in 'users' table (first 5 rows):");
+            for (User user : users) {
+                LOGGER.info(user.toString());
+            }
         }
     }
 }
