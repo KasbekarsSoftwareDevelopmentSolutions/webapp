@@ -56,4 +56,16 @@ public class UserResponseDTO {
     public void setAccount_updated(String account_updated) {
         this.account_updated = account_updated;
     }
+
+    @Override
+    public String toString() {
+        return "UserResponseDTO{" +
+                "id=" + id +
+                ", first_name='" + first_name + '\'' +
+                ", last_name='" + last_name + '\'' +
+                ", email='" + email + '\'' +
+                ", account_created='" + account_created + '\'' +
+                ", account_updated='" + account_updated + '\'' +
+                '}';
+    }
 }

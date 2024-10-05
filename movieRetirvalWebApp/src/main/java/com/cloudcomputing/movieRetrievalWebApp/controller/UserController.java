@@ -25,22 +25,21 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    // Create a new user
     @PostMapping
     public ResponseEntity<UserResponseDTO> createUser(@RequestBody UserCreateDTO userCreateDTO) {
-        // Validate email format using regex
+        LOGGER.info("Received request to create user with email: " + userCreateDTO.getEmailAddress());
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
         Pattern pattern = Pattern.compile(emailRegex);
         if (!pattern.matcher(userCreateDTO.getEmailAddress()).matches()) {
+            LOGGER.warning("Invalid email format for user creation: " + userCreateDTO.getEmailAddress() + " ##HttpStatus.BAD_REQUEST sent in response## ");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        // Validate password is not empty or null
         if (userCreateDTO.getPassword() == null || userCreateDTO.getPassword().isEmpty()) {
+            LOGGER.warning("Password is missing for user creation with email: " + userCreateDTO.getEmailAddress() + " ##HttpStatus.BAD_REQUEST sent in response## ");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        // Convert UserCreateDTO to User model
         User user = new User();
         user.setEmailAddress(userCreateDTO.getEmailAddress());
         user.setPassword(userCreateDTO.getPassword());
@@ -49,17 +48,16 @@ public class UserController {
 
         Optional<User> existingUser = userService.getUserByEmail(user.getEmailAddress());
         if (existingUser.isPresent()) {
+            LOGGER.warning("User with email " + user.getEmailAddress() + " already exists." + " ##HttpStatus.BAD_REQUEST sent in response## ");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
-        // Add the new user to the database
         userService.addUser(user);
+        LOGGER.info("User created successfully with email: " + user.getEmailAddress());
 
-        // Retrieve the newly created user
         Optional<User> findUser = userService.getUserByEmail(userCreateDTO.getEmailAddress());
         if (findUser.isPresent()) {
             User foundUser = findUser.get();
-            // Map User to UserResponseDTO
             UserResponseDTO userResponseDTO = new UserResponseDTO();
             userResponseDTO.setId(foundUser.getUserId());
             userResponseDTO.setFirst_name(foundUser.getFirstName());
@@ -68,31 +66,29 @@ public class UserController {
             userResponseDTO.setAccount_created(foundUser.getAccountCreated().toString());
             userResponseDTO.setAccount_updated(foundUser.getAccountUpdated().toString());
 
-            // Return 201 CREATED status and user details
+            LOGGER.info("User creation successful. Returning user details: " + userResponseDTO + " ##HttpStatus.CREATED sent in response## ");
             return new ResponseEntity<>(userResponseDTO, HttpStatus.CREATED);
         }
 
-        // If something went wrong and the user is not found
+        LOGGER.severe("User creation failed, user could not be found after insertion.");
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // Get user information
     @GetMapping("/self")
     public ResponseEntity<UserResponseDTO> getUserInfo(HttpServletRequest request, Principal principal) {
-        LOGGER.info("Received request to get user info:" + request);
+        LOGGER.info("GET request received to retrieve user info.");
         if (principal == null) {
+            LOGGER.warning("Unauthorized access attempt: Principal is null.");
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
         String email = principal.getName();
 
         List<User> users = userService.getAllUsers();
-        LOGGER.info("Received request to get user info:" + request);
 
         Optional<User> user = userService.getUserByEmail(email);
         if (user.isPresent()) {
             User foundUser = user.get();
-            // Map User to UserResponseDTO
             UserResponseDTO userResponseDTO = new UserResponseDTO();
             userResponseDTO.setId(foundUser.getUserId());
             userResponseDTO.setFirst_name(foundUser.getFirstName());
@@ -100,35 +96,36 @@ public class UserController {
             userResponseDTO.setEmail(foundUser.getEmailAddress());
             userResponseDTO.setAccount_created(foundUser.getAccountCreated().toString());
             userResponseDTO.setAccount_updated(foundUser.getAccountUpdated().toString());
+
+            LOGGER.info("User info retrieved successfully." + userResponseDTO + " ##HttpStatus.OK sent in response## ");
             return ResponseEntity.ok(userResponseDTO);
         }
+
+        LOGGER.warning("User not found for email: " + email);
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    // Update user information
     @PutMapping("/self")
     public ResponseEntity<UserResponseDTO> updateUser(Principal principal, @RequestBody UserUpdateDTO userUpdateDTO) {
+        LOGGER.info("PUT request received to update user info for email: " + principal.getName());
         try {
-            // Fetch the current user's email from Principal
             String email = principal.getName();
 
-            // Retrieve the user before updating to ensure they exist
             Optional<User> existingUser = userService.getUserByEmail(email);
             if (existingUser.isEmpty()) {
+                LOGGER.warning("User not found for update: " + email + " ##HttpStatus.NOT_FOUND sent in response## ");
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
-            // Update the user's information
             User userToUpdate = existingUser.get();
             userToUpdate.setEmailAddress(userUpdateDTO.getEmailAddress());
             userToUpdate.setPassword(userUpdateDTO.getPassword());
             userToUpdate.setFirstName(userUpdateDTO.getFirstName());
             userToUpdate.setLastName(userUpdateDTO.getLastName());
 
-            // Save the updated user
             userService.updateUser(email, userToUpdate);
+            LOGGER.info("User info updated successfully for email: " + email);
 
-            // Map the updated user to UserResponseDTO
             UserResponseDTO userResponseDTO = new UserResponseDTO();
             userResponseDTO.setId(userToUpdate.getUserId());
             userResponseDTO.setFirst_name(userToUpdate.getFirstName());
@@ -137,13 +134,14 @@ public class UserController {
             userResponseDTO.setAccount_created(userToUpdate.getAccountCreated().toString());
             userResponseDTO.setAccount_updated(userToUpdate.getAccountUpdated().toString());
 
+            LOGGER.info("Returning updated user details: " + userResponseDTO + " ##HttpStatus.OK sent in response## ");
             return ResponseEntity.ok(userResponseDTO);
         } catch (IllegalArgumentException e) {
+            LOGGER.severe("Invalid input for user update: " + e.getMessage());
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
 
-    // Allow only unsupported HTTP methods
     @RequestMapping(value = "/self", method = {
             RequestMethod.DELETE,
             RequestMethod.PATCH,
@@ -151,6 +149,7 @@ public class UserController {
             RequestMethod.HEAD
     })
     public ResponseEntity<Void> methodNotAllowed() {
+        LOGGER.warning("Unsupported HTTP method attempted on /self endpoint.");
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .header("Cache-Control", "no-cache, no-store, must-revalidate")
                 .header("Pragma", "no-cache")
