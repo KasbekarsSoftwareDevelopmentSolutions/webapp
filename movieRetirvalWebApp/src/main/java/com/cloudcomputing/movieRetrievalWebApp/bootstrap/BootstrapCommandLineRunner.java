@@ -17,7 +17,8 @@ import java.util.logging.Logger;
 public class BootstrapCommandLineRunner implements CommandLineRunner {
 
     private static final Logger LOGGER = Logger.getLogger(BootstrapCommandLineRunner.class.getName());
-
+    private static final int MAX_RETRY_TIME_MS = 5000;
+    private static final int RETRY_INTERVAL_MS = 1000;
     private final JdbcTemplate jdbcTemplate;
     private final UserRepo userRepo;
 
@@ -29,45 +30,69 @@ public class BootstrapCommandLineRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // PasswordEncoder will be passed as a parameter
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(); // Or use dependency injection if needed
-
-        try {
-            // Check if DB connection is successful
-            jdbcTemplate.execute("SELECT 1");
-            LOGGER.info("Database connection successful!");
-
-            // List all tables in the current database
-            List<String> existingTables = listExistingTables();
-            LOGGER.info("Existing tables in the database: " + existingTables);
-
-            // Check if 'users' table exists, create if not
-            if (!existingTables.contains("users")) {
-                createUsersTable();
-                seedUserData(passwordEncoder); // Pass the PasswordEncoder here
+        String databaseName = getDatabaseName(); // Get the DB name
+        if (checkDatabaseConnection(databaseName)) {
+            handleDatabaseOperations(databaseName);
+        } else {
+            LOGGER.info("Trying to reconnect to the database: " + databaseName);
+            if (attemptReconnection(databaseName)) {
+                handleDatabaseOperations(databaseName);
             } else {
-                LOGGER.info("'users' table already exists.");
-                // Log existing data in the 'users' table
-                logExistingUserData();
+                LOGGER.severe("Trying to reconnect to the database " + databaseName + " failed.");
             }
-        } catch (DataAccessException e) {
-            LOGGER.severe("Error connecting to the database: " + e.getMessage());
         }
     }
 
-    /**
-     * This method lists all the existing tables in the current database.
-     *
-     * @return List of table names
-     */
+    private boolean checkDatabaseConnection(String databaseName) {
+        try {
+            jdbcTemplate.execute("SELECT 1");
+            LOGGER.info("Database connection to " + databaseName + " is successful!");
+            return true;
+        } catch (DataAccessException e) {
+            LOGGER.severe("Database connection to " + databaseName + " is failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean attemptReconnection(String databaseName) {
+        long startTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTime < MAX_RETRY_TIME_MS) {
+            try {
+                Thread.sleep(RETRY_INTERVAL_MS);  // Wait before retrying
+                jdbcTemplate.execute("SELECT 1");
+                LOGGER.info("Database connection to " + databaseName + " is successful after retrying!");
+                return true;
+            } catch (DataAccessException | InterruptedException e) {
+                LOGGER.warning("Retry failed: " + e.getMessage());
+            }
+        }
+        return false;
+    }
+
+    private void handleDatabaseOperations(String databaseName) {
+        List<String> existingTables = listExistingTables();
+        if (!existingTables.isEmpty()) {
+            LOGGER.info("Existing tables in the database: " + existingTables);
+        } else {
+            LOGGER.info("No tables found in the database.");
+        }
+
+        if (existingTables.contains("users")) {
+            LOGGER.info("'users' table exists in the " + databaseName + ".");
+            logExistingUserData();
+        } else {
+            LOGGER.info("'users' table not found in the " + databaseName + ".");
+            createUsersTable();
+            seedUserData();
+            logExistingUserData();
+        }
+    }
+
     private List<String> listExistingTables() {
         String query = "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()";
         return jdbcTemplate.queryForList(query, String.class);
     }
 
-    /**
-     * Creates the 'users' table if it does not exist.
-     */
     private void createUsersTable() {
         String createTableQuery = "CREATE TABLE users (" +
                 "user_id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
@@ -81,27 +106,21 @@ public class BootstrapCommandLineRunner implements CommandLineRunner {
         LOGGER.info("Table 'users' created successfully.");
     }
 
-    /**
-     * Seeds initial data into the 'users' table.
-     */
-    private void seedUserData(PasswordEncoder passwordEncoder) {
+    private void seedUserData() {
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         List<User> users = userRepo.findAll();
 
-        // Seed data only if table is empty
         if (users.isEmpty()) {
             User user1 = new User("user1@example.com", passwordEncoder.encode("password1"), "FirstName1", "LastName1");
             User user2 = new User("user2@example.com", passwordEncoder.encode("password2"), "FirstName2", "LastName2");
             userRepo.save(user1);
             userRepo.save(user2);
-            LOGGER.info("Seed data added to 'users' table.");
+            LOGGER.info("Seed data insertion successful.");
         } else {
             LOGGER.info("'users' table already contains data.");
         }
     }
 
-    /**
-     * Logs existing data in the 'users' table, showing the first 5 rows.
-     */
     private void logExistingUserData() {
         String query = "SELECT * FROM users LIMIT 5";
         List<User> users = jdbcTemplate.query(query, (rs, rowNum) -> new User(
@@ -113,11 +132,17 @@ public class BootstrapCommandLineRunner implements CommandLineRunner {
 
         if (users.isEmpty()) {
             LOGGER.info("'users' table is empty.");
+            seedUserData();
         } else {
             LOGGER.info("Existing data in 'users' table (first 5 rows):");
             for (User user : users) {
                 LOGGER.info(user.toString());
             }
         }
+    }
+
+    private String getDatabaseName() {
+        String query = "SELECT DATABASE()";
+        return jdbcTemplate.queryForObject(query, String.class);
     }
 }
