@@ -1,0 +1,14 @@
+name: Dummy workflow
+
+on:
+  pull_request:
+    branches:
+      - main
+    workflow_dispatch: #Allows manual triggering of the workflow
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
