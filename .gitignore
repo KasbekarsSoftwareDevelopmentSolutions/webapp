@@ -39,6 +39,7 @@ build/                      # Ignore build output folder
 application.properties       # Ignore properties files with sensitive data (like DB credentials)
 application-dev.properties
 application-prod.properties
+application-test.properties
 application.yml              # Same for YAML-based configurations
 *.db                         # Ignore database files
 
