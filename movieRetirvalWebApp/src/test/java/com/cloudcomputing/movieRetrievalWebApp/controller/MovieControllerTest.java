@@ -81,5 +81,4 @@ public class MovieControllerTest {
         .content("{}"))
         .andExpect(status().isNotFound());
   }
-
 }

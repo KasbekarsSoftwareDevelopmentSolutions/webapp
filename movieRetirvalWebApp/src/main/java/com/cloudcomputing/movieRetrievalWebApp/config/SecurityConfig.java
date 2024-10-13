@@ -29,8 +29,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v1/user/self/**").authenticated()
                         .requestMatchers("/healthz", "/v1/users/**").permitAll()
-                        .anyRequest().permitAll()
-                )
+                        .requestMatchers("/").permitAll()
+                        .anyRequest().permitAll())
                 .httpBasic();
 
         return http.build();

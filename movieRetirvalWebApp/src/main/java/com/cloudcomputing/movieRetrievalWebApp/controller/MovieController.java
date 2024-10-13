@@ -10,9 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/")
 public class MovieController {
 
-    @RequestMapping(method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.PATCH})
-    public ResponseEntity<Void> resourceNotAvailable() {
-        // Return 404 Not Found for any HTTP method on "/"
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-    }
+  @RequestMapping(method = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE,
+      RequestMethod.PATCH })
+  public ResponseEntity<Void> resourceNotAvailable() {
+    // Return 404 Not Found for any HTTP method on "/"
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+  }
 }
