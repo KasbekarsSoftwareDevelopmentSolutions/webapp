@@ -68,7 +68,7 @@ public class UserControllerIntegrationTest {
   @Test
   public void createUser_invalidEmail_returnsBadRequest() throws Exception {
     UserCreateDTO userCreateDTO = new UserCreateDTO();
-    userCreateDTO.setEmailAddress("invalid-email");
+    userCreateDTO.setEmailAddress("invalid-email@gmail.com");
     userCreateDTO.setPassword("password123");
 
     mockMvc.perform(post("/v1/user")
