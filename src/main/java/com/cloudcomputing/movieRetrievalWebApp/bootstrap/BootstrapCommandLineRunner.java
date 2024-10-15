@@ -17,8 +17,9 @@ import java.util.logging.Logger;
 public class BootstrapCommandLineRunner implements CommandLineRunner {
 
   private static final Logger LOGGER = Logger.getLogger(BootstrapCommandLineRunner.class.getName());
-  private static final int MAX_RETRY_TIME_MS = 5000;
-  private static final int RETRY_INTERVAL_MS = 1000;
+  private static final int MAX_RETRY_ATTEMPTS = 3;
+  private static final long RETRY_DELAY_MS = 1000;
+
   private final JdbcTemplate jdbcTemplate;
   private final UserRepo userRepo;
 
@@ -30,67 +31,49 @@ public class BootstrapCommandLineRunner implements CommandLineRunner {
 
   @Override
   public void run(String... args) {
-    String databaseName = getDatabaseName(); // Get the DB name
-    if (checkDatabaseConnection(databaseName)) {
+    String databaseName = getDatabaseName();
+    if (checkDatabaseConnectionWithRetry(databaseName)) {
       handleDatabaseOperations(databaseName);
     } else {
-      LOGGER.info("Trying to reconnect to the database: " + databaseName);
-      if (attemptReconnection(databaseName)) {
-        handleDatabaseOperations(databaseName);
-      } else {
-        LOGGER.severe("Trying to reconnect to the database " + databaseName + " failed.");
-      }
+      LOGGER.severe("Failed to connect to the database: " + databaseName);
     }
   }
 
-  private boolean checkDatabaseConnection(String databaseName) {
-    try {
-      jdbcTemplate.execute("SELECT 1");
-      LOGGER.info("Database connection to " + databaseName + " is successful!");
-      return true;
-    } catch (DataAccessException e) {
-      LOGGER.severe("Database connection to " + databaseName + " is failed: " + e.getMessage());
-      return false;
-    }
-  }
-
-  private boolean attemptReconnection(String databaseName) {
-    long startTime = System.currentTimeMillis();
-    while (System.currentTimeMillis() - startTime < MAX_RETRY_TIME_MS) {
+  private boolean checkDatabaseConnectionWithRetry(String databaseName) {
+    for (int attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
       try {
-        Thread.sleep(RETRY_INTERVAL_MS); // Wait before retrying
         jdbcTemplate.execute("SELECT 1");
-        LOGGER.info("Database connection to " + databaseName + " is successful after retrying!");
+        LOGGER.info("Database connection to " + databaseName + " is successful!");
         return true;
-      } catch (DataAccessException | InterruptedException e) {
-        LOGGER.warning("Retry failed: " + e.getMessage());
+      } catch (DataAccessException e) {
+        LOGGER.warning("Attempt " + attempt + " failed: " + e.getMessage());
+        if (attempt < MAX_RETRY_ATTEMPTS) {
+          try {
+            Thread.sleep(RETRY_DELAY_MS);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            return false;
+          }
+        }
       }
     }
     return false;
   }
 
   private void handleDatabaseOperations(String databaseName) {
-    List<String> existingTables = listExistingTables();
-    if (!existingTables.isEmpty()) {
-      LOGGER.info("Existing tables in the database: " + existingTables);
-    } else {
-      LOGGER.info("No tables found in the database.");
-    }
-
-    if (existingTables.contains("users")) {
-      LOGGER.info("'users' table exists in the " + databaseName + ".");
-      logExistingUserData();
-    } else {
-      LOGGER.info("'users' table not found in the " + databaseName + ".");
+    if (!tableExists("users")) {
       createUsersTable();
       seedUserData();
-      logExistingUserData();
+    } else {
+      LOGGER.info("'users' table already exists in " + databaseName);
     }
+    logExistingUserData();
   }
 
-  private List<String> listExistingTables() {
-    String query = "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()";
-    return jdbcTemplate.queryForList(query, String.class);
+  private boolean tableExists(String tableName) {
+    String query = "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ?";
+    Integer count = jdbcTemplate.queryForObject(query, Integer.class, tableName.toUpperCase());
+    return count != null && count > 0;
   }
 
   private void createUsersTable() {

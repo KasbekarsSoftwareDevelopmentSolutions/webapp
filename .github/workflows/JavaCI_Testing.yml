@@ -9,8 +9,6 @@
 name: Java CI with Maven
 
 on:
-  push:
-    branches: ["main"]
   pull_request:
     branches: ["main"]
 
@@ -19,10 +17,13 @@ on:
 
 jobs:
   build:
+    name: Test
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: "Set up archived Oracle JDK 21.0.1"
         uses: oracle-actions/setup-java@v1
         with:
@@ -30,8 +31,17 @@ jobs:
           release: 21
           version: 21.0.1
 
+      - name: Set Applicatioon Properties
+        run: |
+          echo "spring.datasource.url=${{ secrets.SPRING_DATASOURCE_URL }}" >> $GITHUB_ENV
+          echo "spring.datasource.driver-class-name=${{ secrets.SPRING_DATASOURCE_DRIVER_CLASS_NAME }}" >> $GITHUB_ENV
+          echo "spring.datasource.username=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> $GITHUB_ENV
+          echo "spring.datasource.password=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> $GITHUB_ENV
+          echo "spring.jpa.database-platform=${{ secrets.SPRING_JPA_DATABASE_PLATFORM }}" >> $GITHUB_ENV
+          echo "spring.jpa.hibernate.ddl-auto=${{ secrets.SPRING_JPA_HIBERNATE_DDL_AUTO }}" >> $GITHUB_ENV
+          echo "spring.jpa.show-sql=${{ secrets.SPRING_JPA_SHOW_SQL }}" >> $GITHUB_ENV
+          echo "logging.level.org.springframework=${{ secrets.LOGGING_LEVEL_ORG_SPRINGFRAMEWORK }}" >> $GITHUB_ENV
+          echo "logging.level.com.cloudcomputing.movieRetrievalWebApp=${{ secrets.LOGGING_LEVEL_COM_CLOUDCOMPUTING_MOVIERETRIEVALWEBAPP }}" >> $GITHUB_ENV
+
       - name: Run Test Cases
         run: mvn test --file pom.xml
-
-      - name: Build with Maven
-        run: mvn -B package --file pom.xml
