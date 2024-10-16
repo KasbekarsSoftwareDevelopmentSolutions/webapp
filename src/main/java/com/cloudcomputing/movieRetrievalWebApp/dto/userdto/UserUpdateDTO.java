@@ -1,5 +1,6 @@
 package com.cloudcomputing.movieRetrievalWebApp.dto.userdto;
 
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Email;
 
 public class UserUpdateDTO {
@@ -7,10 +8,13 @@ public class UserUpdateDTO {
     @Email(message = "Email should be valid")
     private String emailAddress;
 
+    @Nullable
     private String password;
 
+    @Nullable
     private String firstName;
 
+    @Nullable
     private String lastName;
 
     // Getters and Setters

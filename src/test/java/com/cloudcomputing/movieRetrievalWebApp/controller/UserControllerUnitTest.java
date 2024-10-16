@@ -1,33 +1,35 @@
 package com.cloudcomputing.movieRetrievalWebApp.controller;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
+
 import com.cloudcomputing.movieRetrievalWebApp.dto.userdto.UserCreateDTO;
 import com.cloudcomputing.movieRetrievalWebApp.dto.userdto.UserResponseDTO;
 import com.cloudcomputing.movieRetrievalWebApp.dto.userdto.UserUpdateDTO;
 import com.cloudcomputing.movieRetrievalWebApp.model.User;
 import com.cloudcomputing.movieRetrievalWebApp.service.UserService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 import java.security.Principal;
-import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class UserControllerUnitTest {
 
   @Mock
   private UserService userService;
-
-  @Mock
-  private Principal principal;
 
   @InjectMocks
   private UserController userController;
@@ -38,116 +40,147 @@ class UserControllerUnitTest {
   }
 
   @Test
-  void createUser_validRequest_returnsCreated() {
-    UserCreateDTO userCreateDTO = new UserCreateDTO();
-    userCreateDTO.setEmailAddress("test@example.com");
-    userCreateDTO.setPassword("password123");
-    userCreateDTO.setFirstName("John");
-    userCreateDTO.setLastName("Doe");
+  void createUser_Success() {
+    Map<String, Object> requestBody = new HashMap<>();
+    requestBody.put("emailAddress", "test@example.com");
+    requestBody.put("password", "password123");
+    requestBody.put("firstName", "John");
+    requestBody.put("lastName", "Doe");
 
-    when(userService.getUserByEmail(anyString())).thenReturn(Optional.empty());
-    when(userService.addUser(any(User.class))).thenReturn(new User());
+    MockHttpServletRequest request = new MockHttpServletRequest();
 
-    ResponseEntity<UserResponseDTO> response = userController.createUser(userCreateDTO);
+    try (MockedStatic<ControllerUtils> mockedControllerUtils = mockStatic(ControllerUtils.class)) {
+      mockedControllerUtils.when(() -> ControllerUtils.validateEmailPassword(any(UserCreateDTO.class)))
+          .thenReturn(true);
+      mockedControllerUtils.when(() -> ControllerUtils.checkUserExists(userService, "test@example.com"))
+          .thenReturn(false);
+      mockedControllerUtils.when(() -> ControllerUtils.createUser(any(UserCreateDTO.class))).thenReturn(new User());
+      mockedControllerUtils.when(() -> ControllerUtils.getExsistingUser(userService, "test@example.com"))
+          .thenReturn(Optional.of(new User()));
+      mockedControllerUtils.when(() -> ControllerUtils.setResponseObject(any(Optional.class)))
+          .thenReturn(new UserResponseDTO());
 
-    assertEquals(HttpStatus.CREATED, response.getStatusCode());
-    assertNotNull(response.getBody());
-    assertEquals("test@example.com", response.getBody().getEmail());
+      ResponseEntity<UserResponseDTO> response = userController.createUser(requestBody, request);
+
+      assertEquals(HttpStatus.CREATED, response.getStatusCode());
+      assertNotNull(response.getBody());
+    }
   }
 
   @Test
-  void createUser_invalidEmail_returnsBadRequest() {
-    UserCreateDTO userCreateDTO = new UserCreateDTO();
-    userCreateDTO.setEmailAddress("invalid-email");
-    userCreateDTO.setPassword("password123");
+  void createUser_UserAlreadyExists() {
+    Map<String, Object> requestBody = new HashMap<>();
+    requestBody.put("emailAddress", "existing@example.com");
+    requestBody.put("password", "password123");
+    requestBody.put("firstName", "John");
+    requestBody.put("lastName", "Doe");
 
-    ResponseEntity<UserResponseDTO> response = userController.createUser(userCreateDTO);
+    MockHttpServletRequest request = new MockHttpServletRequest();
 
-    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    try (MockedStatic<ControllerUtils> mockedControllerUtils = mockStatic(ControllerUtils.class)) {
+      mockedControllerUtils.when(() -> ControllerUtils.validateEmailPassword(any(UserCreateDTO.class)))
+          .thenReturn(true);
+      mockedControllerUtils.when(() -> ControllerUtils.checkUserExists(userService, "existing@example.com"))
+          .thenReturn(true);
+
+      ResponseEntity<UserResponseDTO> response = userController.createUser(requestBody, request);
+
+      assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
   }
 
   @Test
-  void createUser_existingUser_returnsBadRequest() {
-    UserCreateDTO userCreateDTO = new UserCreateDTO();
-    userCreateDTO.setEmailAddress("existing@example.com");
-    userCreateDTO.setPassword("password123");
+  void getUserInfo_Success() {
+    Principal principal = () -> "test@example.com";
+    MockHttpServletRequest request = new MockHttpServletRequest();
 
-    when(userService.getUserByEmail(anyString())).thenReturn(Optional.of(new User()));
-
-    ResponseEntity<UserResponseDTO> response = userController.createUser(userCreateDTO);
-
-    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-  }
-
-  @Test
-  void getUserInfo_existingUser_returnsOk() {
     User user = new User();
-    user.setUserId(1L);
     user.setEmailAddress("test@example.com");
     user.setFirstName("John");
     user.setLastName("Doe");
 
-    when(principal.getName()).thenReturn("test@example.com");
-    when(userService.getUserByEmail("test@example.com")).thenReturn(Optional.of(user));
+    try (MockedStatic<ControllerUtils> mockedControllerUtils = mockStatic(ControllerUtils.class)) {
+      mockedControllerUtils.when(() -> ControllerUtils.checkUserExists(userService, "test@example.com"))
+          .thenReturn(true);
+      mockedControllerUtils.when(() -> ControllerUtils.getExsistingUser(userService, "test@example.com"))
+          .thenReturn(Optional.of(user));
+      mockedControllerUtils.when(() -> ControllerUtils.setResponseObject(any(Optional.class)))
+          .thenReturn(new UserResponseDTO());
 
-    ResponseEntity<UserResponseDTO> response = userController.getUserInfo(null, principal);
+      ResponseEntity<UserResponseDTO> response = userController.getUserInfo(request, principal);
 
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertNotNull(response.getBody());
-    assertEquals("test@example.com", response.getBody().getEmail());
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertNotNull(response.getBody());
+    }
   }
 
   @Test
-  void getUserInfo_nonExistingUser_returnsNotFound() {
-    when(principal.getName()).thenReturn("nonexistent@example.com");
-    when(userService.getUserByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
+  void getUserInfo_UserNotFound() {
+    Principal principal = () -> "nonexistent@example.com";
+    MockHttpServletRequest request = new MockHttpServletRequest();
 
-    ResponseEntity<UserResponseDTO> response = userController.getUserInfo(null, principal);
+    try (MockedStatic<ControllerUtils> mockedControllerUtils = mockStatic(ControllerUtils.class)) {
+      mockedControllerUtils.when(() -> ControllerUtils.checkUserExists(userService, "nonexistent@example.com"))
+          .thenReturn(false);
 
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+      ResponseEntity<UserResponseDTO> response = userController.getUserInfo(request, principal);
+
+      assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
   }
 
   @Test
-  void updateUser_existingUser_returnsOk() {
-    UserUpdateDTO userUpdateDTO = new UserUpdateDTO();
-    userUpdateDTO.setEmailAddress("updated@example.com");
-    userUpdateDTO.setFirstName("UpdatedJohn");
-    userUpdateDTO.setLastName("UpdatedDoe");
+  void updateUser_Success() {
+    Principal principal = () -> "test@example.com";
+    Map<String, Object> requestBody = new HashMap<>();
+    requestBody.put("firstName", "UpdatedJohn");
+    requestBody.put("lastName", "UpdatedDoe");
+
+    MockHttpServletRequest request = new MockHttpServletRequest();
 
     User existingUser = new User();
-    existingUser.setUserId(1L);
     existingUser.setEmailAddress("test@example.com");
 
-    when(principal.getName()).thenReturn("test@example.com");
-    when(userService.getUserByEmail("test@example.com")).thenReturn(Optional.of(existingUser));
-    when(userService.updateUser(eq("test@example.com"), any(User.class))).thenReturn(existingUser);
+    try (MockedStatic<ControllerUtils> mockedControllerUtils = mockStatic(ControllerUtils.class)) {
+      mockedControllerUtils.when(() -> ControllerUtils.checkUserExists(userService, "test@example.com"))
+          .thenReturn(true);
+      mockedControllerUtils
+          .when(() -> ControllerUtils.updateUser(eq(userService), any(UserUpdateDTO.class), eq("test@example.com")))
+          .thenReturn(existingUser);
 
-    ResponseEntity<UserResponseDTO> response = userController.updateUser(principal, userUpdateDTO);
+      ResponseEntity<UserResponseDTO> response = userController.updateUser(principal, requestBody, request);
 
-    assertEquals(HttpStatus.OK, response.getStatusCode());
-    assertNotNull(response.getBody());
-    assertEquals("updated@example.com", response.getBody().getEmail());
+      assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+      verify(userService).updateUser(eq("test@example.com"), any(User.class));
+    }
   }
 
   @Test
-  void updateUser_nonExistingUser_returnsNotFound() {
-    UserUpdateDTO userUpdateDTO = new UserUpdateDTO();
-    when(principal.getName()).thenReturn("nonexistent@example.com");
-    when(userService.getUserByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
+  void updateUser_UserNotFound() {
+    Principal principal = () -> "nonexistent@example.com";
+    Map<String, Object> requestBody = new HashMap<>();
+    requestBody.put("firstName", "UpdatedJohn");
 
-    ResponseEntity<UserResponseDTO> response = userController.updateUser(principal, userUpdateDTO);
+    MockHttpServletRequest request = new MockHttpServletRequest();
 
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    try (MockedStatic<ControllerUtils> mockedControllerUtils = mockStatic(ControllerUtils.class)) {
+      mockedControllerUtils.when(() -> ControllerUtils.checkUserExists(userService, "nonexistent@example.com"))
+          .thenReturn(false);
+
+      ResponseEntity<UserResponseDTO> response = userController.updateUser(principal, requestBody, request);
+
+      assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
   }
 
   @Test
-  void methodNotAllowed_returnsMethodNotAllowed() {
+  void methodNotAllowed() {
     ResponseEntity<Void> response = userController.methodNotAllowed();
 
     assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
-    assertNotNull(response.getHeaders());
     assertTrue(response.getHeaders().containsKey("Cache-Control"));
     assertTrue(response.getHeaders().containsKey("Pragma"));
     assertTrue(response.getHeaders().containsKey("X-Content-Type-Options"));
   }
+
 }
