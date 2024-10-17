@@ -11,19 +11,14 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.stream.Collectors;
-import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Set;
-
-import java.io.IOException;
 
 /**
  * UserController handles API requests related to user operations such as
