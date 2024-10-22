@@ -24,22 +24,18 @@ variable "ssh_username" {
 
 variable "profile" {
   type    = string
-  default = "aadityaDevelopmentUser"
 }
 
 variable "aws_demoacc" {
   type    = string
-  default = "820242918362"
 }
 
 variable "aws_devacc" {
   type    = string
-  default = "390403856687"
 }
 
 variable "subnet_id" {
   type    = string
-  default = "subnet-0d6a01e42fbb60bda"
 }
 
 source "amazon-ebs" "ubuntu" {
@@ -78,11 +74,11 @@ build {
   sources = ["source.amazon-ebs.ubuntu"]
 
   provisioner "shell" {
-    script = "updateOS.sh"
+    script = "./shellScripts/updateOS.sh"
   }
 
   provisioner "shell" {
-    script = "appDIRCreation.sh"
+    script = "./shellScripts/appDIRCreation.sh"
   }
 
   provisioner "file" {
@@ -96,20 +92,20 @@ build {
   # }
 
   provisioner "file" {
-    sources     = ["cloud-native-app.service"]
+    sources     = ["./shellScripts/cloud-native-app.service"]
     destination = "/tmp/"
   }
 
   provisioner "shell" {
-    script = "jdkSetup.sh"
+    script = "./shellScripts/jdkSetup.sh"
   }
 
   provisioner "shell" {
-    script = "mysqlSetup.sh"
+    script = "./shellScripts/mysqlSetup.sh"
   }
 
   provisioner "shell" {
-    script = "appSetup.sh"
+    script = "./shellScripts/appSetup.sh"
   }
 
   post-processor "manifest" {

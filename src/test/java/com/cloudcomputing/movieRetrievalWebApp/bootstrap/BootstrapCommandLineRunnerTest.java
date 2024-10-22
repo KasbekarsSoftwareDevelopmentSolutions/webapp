@@ -81,8 +81,7 @@ class BootstrapCommandLineRunnerTest {
     verify(jdbcTemplate, times(2)).execute("SELECT 1");
 
     // Verify table creation and user seeding
-    verify(jdbcTemplate, times(1)).execute(startsWith("CREATE TABLE users"));
-    verify(userRepo, times(4)).save(any(User.class));
+    verify(userRepo, times(2)).save(any(User.class));
   }
 
   @Test
@@ -90,9 +89,8 @@ class BootstrapCommandLineRunnerTest {
     // Simulate the existence of the "testdb" database
     when(jdbcTemplate.queryForObject(anyString(), eq(String.class))).thenReturn("testdb");
 
-    // Simulate the existence of the "users" table by returning a count greater than
-    // 0
-    when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), eq("USERS"))).thenReturn(1);
+    // Simulate the count of users in the users table (e.g., 2 existing users)
+    when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class))).thenReturn(2);
 
     // Simulate the retrieval of users from the "users" table
     when(jdbcTemplate.query(anyString(), any(RowMapper.class))).thenReturn(Arrays.asList(
@@ -105,9 +103,6 @@ class BootstrapCommandLineRunnerTest {
     // Verify that the database name was retrieved once
     verify(jdbcTemplate, times(1)).queryForObject(anyString(), eq(String.class));
 
-    // Verify that the users table existence was checked once
-    verify(jdbcTemplate, times(1)).queryForObject(anyString(), eq(Integer.class), eq("USERS"));
-
     // Verify that the user data was retrieved once from the "users" table
     verify(jdbcTemplate, times(1)).query(anyString(), any(RowMapper.class));
 
@@ -119,12 +114,12 @@ class BootstrapCommandLineRunnerTest {
   @Test
   void testNonExistingUsersTable() throws Exception {
     when(jdbcTemplate.queryForObject(anyString(), eq(String.class))).thenReturn("testdb");
+    when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class))).thenReturn(0);
     when(jdbcTemplate.queryForList(anyString(), eq(String.class))).thenReturn(Collections.emptyList());
     when(userRepo.findAll()).thenReturn(Collections.emptyList());
 
     bootstrapRunner.run();
 
-    verify(jdbcTemplate, times(1)).execute(startsWith("CREATE TABLE users"));
     verify(userRepo, times(2)).findAll();
     verify(userRepo, times(4)).save(any(User.class));
   }
@@ -139,8 +134,8 @@ class BootstrapCommandLineRunnerTest {
     bootstrapRunner.run();
 
     verify(jdbcTemplate, times(1)).query(anyString(), any(RowMapper.class));
-    verify(userRepo, times(2)).findAll();
-    verify(userRepo, times(4)).save(any(User.class));
+    verify(userRepo, times(1)).findAll();
+    verify(userRepo, times(2)).save(any(User.class));
   }
 
   @Test

@@ -1,4 +1,16 @@
+# Packer Artifacts
+manifest.json
+# Cache objects
+packer_cache/
 
+# Crash log
+crash.log
+
+# Varaible data
+*.pkrvars.hcl
+
+# For built boxes
+*.box
 # --------------------------------------
 # General OS-specific ignores
 # --------------------------------------
