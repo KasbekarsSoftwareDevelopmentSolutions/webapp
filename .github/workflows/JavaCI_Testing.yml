@@ -1,3 +1,23 @@
+# Summary:
+# This workflow is designed to test a Java application integrated with MySQL. It runs on each pull request to the "main" branch.
+# It checks out the code, waits for MySQL to start, tests MySQL connectivity, sets up Oracle JDK 21.0.1, caches Maven dependencies, configures
+# application properties for testing, and finally, runs the test cases using Maven.
+#
+# Trigger Events:
+# - The workflow is triggered on pull requests targeting the "main" branch.
+#
+# Jobs:
+# - A single job `test` is executed which tests the Java application with MySQL.
+#
+# Steps:
+# 1. Checkout code: Fetches the latest code from the repository.
+# 2. Wait for MySQL to start: A loop runs until MySQL is ready, checking with `mysqladmin ping`.
+# 3. Test MySQL Connectivity: Verifies the connection to MySQL by listing the databases.
+# 4. Set up Oracle JDK 21.0.1: Uses the Oracle setup action to install JDK.
+# 5. Cache Maven packages: Caches Maven dependencies for faster subsequent builds.
+# 6. Set up Application Properties: Configures `application.properties` for MySQL and logging settings using secrets and environment variables.
+# 7. Run Test Cases: Executes the Maven test suite to ensure all test cases pass.
+
 name: Java CI Testing Maven
 
 on:
@@ -48,7 +68,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ hashFiles('/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
       - name: Set up Application Properties for Tests
