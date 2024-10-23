@@ -8,25 +8,33 @@ echo "Installing MySQL APT repository package... (using mysqlSetup.sh)"
 # Install MySQL Server
 echo "Installing MySQL 8.0 Server..."
 sudo apt install -y mysql-server
-echo "Sleeping for 10....."
+
+# Wait for 10 seconds before the next operation (optional)
+echo "Waiting for 10 seconds to ensure all actions are complete..."
 sleep 10
 
 # Start the MySQL service
 echo "Starting MySQL service..."
 sudo systemctl start mysql
-echo "Sleeping for 10....."
+
+# Wait for 10 seconds before the next operation (optional)
+echo "Waiting for 10 seconds to ensure all actions are complete..."
 sleep 10
 
 # Check MySQL service status
 echo "Checking MySQL service status..."
 sudo systemctl status mysql --no-pager
-echo "Sleeping for 10....."
+
+# Wait for 10 seconds before the next operation (optional)
+echo "Waiting for 10 seconds to ensure all actions are complete..."
 sleep 10
 
 # Optional: Enable MySQL service to start on boot
 echo "Enabling MySQL service to start on boot..."
 sudo systemctl enable mysql
-echo "Sleeping for 10....."
+
+# Wait for 10 seconds before the next operation (optional)
+echo "Waiting for 10 seconds to ensure all actions are complete..."
 sleep 10
 
 # Completion message
@@ -43,7 +51,9 @@ if [ $? -eq 0 ]; then
 else
     echo "Failed to create user 'aadityaKasbekar'."
 fi
-echo "Sleeping for 10....."
+
+# Wait for 10 seconds before the next operation (optional)
+echo "Waiting for 10 seconds to ensure all actions are complete..."
 sleep 10
 
 # Create the CloudAppDB database
@@ -56,7 +66,9 @@ if [ $? -eq 0 ]; then
 else
     echo "Failed to create database 'CloudAppDB'."
 fi
-echo "Sleeping for 10....."
+
+# Wait for 10 seconds before the next operation (optional)
+echo "Waiting for 10 seconds to ensure all actions are complete..."
 sleep 10
 
 # Grant all privileges to the new user on the CloudAppDB database
@@ -73,3 +85,7 @@ sudo mysql -u root -e "SHOW DATABASES;"
 # List all tables in CloudAppDB
 echo "Listing all tables in CloudAppDB..."
 sudo mysql -u root -D CloudAppDB -e "SHOW TABLES;"
+
+# Wait for 10 seconds before the next operation (optional)
+echo "Waiting for 10 seconds after mysql setup completed..."
+sleep 10

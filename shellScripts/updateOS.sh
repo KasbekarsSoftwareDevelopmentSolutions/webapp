@@ -33,3 +33,7 @@ sudo apt update -y
 
 # Notify that the script has completed
 echo "Environment setup completed successfully."
+
+# Wait for 10 seconds before the next operation (optional)
+echo "Waiting for 10 seconds to ensure updates are complete..."
+sleep 10

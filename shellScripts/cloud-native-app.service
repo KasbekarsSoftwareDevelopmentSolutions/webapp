@@ -1,0 +1,14 @@
+[Unit]
+Description=cloud-native-app
+After=syslog.target
+
+[Service]
+User=csye6225
+EnvironmentFile=/etc/environment
+ExecStart=/usr/bin/java -jar /opt/cloudNativeApplicationFolder/movieRetirvalWebApp-0.0.1-SNAPSHOT.jar
+StandardOutput=file:/home/csye6225/logs/cloudNativeApp_csye6225.log
+StandardError=file:/home/csye6225/logs/cloudNativeApp_csye6225
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

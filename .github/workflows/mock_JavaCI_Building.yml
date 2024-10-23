@@ -1,14 +1,27 @@
-name: Java CI Testing Maven
+# Summary:
+# This workflow is named "Java CI Building with Maven" and is responsible for building a Java application using Maven.
+#
+# Trigger Events:
+# - It is triggered on pull requests to the 'main' branch.
+#
+# Jobs:
+# - The job "Build Java Application" runs on an Ubuntu machine and performs the following steps:
+#   1. Checkout code: Pulls the latest code from the repository.
+#   2. Setup Oracle JDK: Installs Oracle JDK 21.0.1.
+#   3. Set Application Properties: Configures environment variables from secret properties for the Spring Boot application.
+#   4. Build Spring Boot Application: Builds the Spring Boot application using Maven.
+
+name: Java CI Building with Maven
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: [main] # Trigger workflow on pull request to main branch
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Test Java Application with MySQL
-    runs-on: ubuntu-latest
+  build:
+    name: Building Java Application with MySQL
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner for the job
 
     services:
       mysql:
@@ -23,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 # Check out the repository code
 
       - name: Wait for MySQL to start
         run: |
@@ -38,7 +51,7 @@ jobs:
           mysql -h "127.0.0.1" -u "${{ secrets.DB_USERNAME }}" -p"${{ secrets.DB_USER_PASSWORD }}" -e "SHOW DATABASES;"
 
       - name: Set up Oracle JDK 21.0.1
-        uses: oracle-actions/setup-java@v1
+        uses: oracle-actions/setup-java@v1 # Set up Oracle JDK 21.0.1
         with:
           website: oracle.com
           release: 21
@@ -67,5 +80,5 @@ jobs:
           echo "logging.level.root=${{ vars.LOGGING_LEVEL_ROOT }}" >> src/main/resources/application.properties
           echo "logging.level.org.springframework.boot.devtools=${{ vars.LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_BOOT_DEVTOOLS }}" >> src/main/resources/application.properties
 
-      - name: Run Test Cases
-        run: mvn test --file pom.xml
+      - name: Run Build Application
+        run: mvn clean install --file pom.xml

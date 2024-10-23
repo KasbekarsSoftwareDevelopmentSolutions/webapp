@@ -1,4 +1,16 @@
+# Packer Artifacts
+manifest.json
+# Cache objects
+packer_cache/
 
+# Crash log
+crash.log
+
+# Varaible data
+*.pkrvars.hcl
+
+# For built boxes
+*.box
 # --------------------------------------
 # General OS-specific ignores
 # --------------------------------------
@@ -46,13 +58,6 @@ $RECYCLE.BIN/        # Windows recycle bin folder
 *.war
 *.jar
 *.ear
-
-# Environment-specific properties (you might store these in external config services or environment variables)
-resources/
-*.env
-*.properties
-
-application.yml
 
 # --------------------------------------
 # IntelliJ IDEA-related ignores
@@ -113,3 +118,7 @@ temp/
 .classpath
 .settings/
 .DS_Store
+
+# Excluding Important Files
+applicationproperties.txt
+applicationtestproperties.txt

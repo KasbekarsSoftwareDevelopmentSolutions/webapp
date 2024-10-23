@@ -22,11 +22,6 @@ variable "ssh_username" {
   default = "ubuntu"
 }
 
-variable "profile" {
-  type    = string
-  default = "aadityaDevelopmentUser"
-}
-
 variable "aws_demoacc" {
   type    = string
   default = "820242918362"
@@ -38,20 +33,18 @@ variable "aws_devacc" {
 }
 
 variable "subnet_id" {
-  type    = string
-  default = "subnet-0d6a01e42fbb60bda"
+  type = string
 }
 
 source "amazon-ebs" "ubuntu" {
   region          = "${var.aws_region}"
-  profile         = "${var.profile}"
   ami_name        = "CloudNativeApp_assignment4_${formatdate("YYYY_MM_DD_hh_mm_ss", timestamp())}"
   ami_description = "AMI for CSYE 6225 of assignment 4"
   ami_regions = [
     "${var.aws_region}"
   ]
   ami_users = [
-    "${var.aws_demoacc}",
+    "${var.aws_devacc}",
     "${var.aws_demoacc}",
   ]
 
@@ -78,11 +71,11 @@ build {
   sources = ["source.amazon-ebs.ubuntu"]
 
   provisioner "shell" {
-    script = "updateOS.sh"
+    script = "./shellScripts/updateOS.sh"
   }
 
   provisioner "shell" {
-    script = "appDIRCreation.sh"
+    script = "./shellScripts/appDirCreation.sh"
   }
 
   provisioner "file" {
@@ -96,20 +89,20 @@ build {
   # }
 
   provisioner "file" {
-    sources     = ["cloud-native-app.service"]
+    sources     = ["./shellScripts/cloud-native-app.service"]
     destination = "/tmp/"
   }
 
   provisioner "shell" {
-    script = "jdkSetup.sh"
+    script = "./shellScripts/jdkSetup.sh"
   }
 
   provisioner "shell" {
-    script = "mysqlSetup.sh"
+    script = "./shellScripts/mysqlSetup.sh"
   }
 
   provisioner "shell" {
-    script = "appSetup.sh"
+    script = "./shellScripts/appSetup.sh"
   }
 
   post-processor "manifest" {

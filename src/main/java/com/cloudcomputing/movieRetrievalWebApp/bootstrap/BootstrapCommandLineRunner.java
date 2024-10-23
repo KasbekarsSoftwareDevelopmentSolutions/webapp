@@ -33,7 +33,7 @@ public class BootstrapCommandLineRunner implements CommandLineRunner {
   public void run(String... args) {
     String databaseName = getDatabaseName();
     if (checkDatabaseConnectionWithRetry(databaseName)) {
-      handleDatabaseOperations(databaseName);
+      handleDatabaseOperations();
     } else {
       LOGGER.severe("Failed to connect to the database: " + databaseName);
     }
@@ -60,33 +60,19 @@ public class BootstrapCommandLineRunner implements CommandLineRunner {
     return false;
   }
 
-  private void handleDatabaseOperations(String databaseName) {
-    if (!tableExists("users")) {
-      createUsersTable();
-      seedUserData();
-    } else {
-      LOGGER.info("'users' table already exists in " + databaseName);
+  private void handleDatabaseOperations() {
+    if (jdbcTemplate == null) {
+      throw new IllegalStateException("JdbcTemplate is not initialized");
     }
-    logExistingUserData();
-  }
-
-  private boolean tableExists(String tableName) {
-    String query = "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ?";
-    Integer count = jdbcTemplate.queryForObject(query, Integer.class, tableName.toUpperCase());
-    return count != null && count > 0;
-  }
-
-  private void createUsersTable() {
-    String createTableQuery = "CREATE TABLE users (" +
-        "user_id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
-        "email_address VARCHAR(255) NOT NULL UNIQUE, " +
-        "password VARCHAR(255) NOT NULL, " +
-        "first_name VARCHAR(255) NOT NULL, " +
-        "last_name VARCHAR(255), " +
-        "account_created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
-        "account_updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)";
-    jdbcTemplate.execute(createTableQuery);
-    LOGGER.info("Table 'users' created successfully.");
+    try {
+      Integer userCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Integer.class);
+      if (userCount != null && userCount == 0) {
+        seedUserData();
+      }
+      logExistingUserData();
+    } catch (DataAccessException e) {
+      LOGGER.warning("Error accessing the database" + e.toString());
+    }
   }
 
   private void seedUserData() {
