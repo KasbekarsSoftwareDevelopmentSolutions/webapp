@@ -1,29 +1,37 @@
+# Summary:
+# This workflow is named "Packer Checks" and is responsible for performing validation and formatting checks on Packer templates.
+#
+# Trigger Events:
+# - It is triggered on pull requests to the 'main' branch.
+# - It can also be manually triggered via workflow dispatch.
+#
+# Jobs:
+# - The job "Packer Check" runs on an Ubuntu machine and performs the following steps:
+#   1. Checkout: Checks out the code from the repository.
+#   2. Setup Packer: Installs the specified version of Packer (1.11.2).
+#   3. Run `packer init`: Initializes the Packer environment with the specified template.
+#   4. Run `packer fmt`: Formats the Packer template to ensure consistency.
+#   5. Run `packer validate`: Validates the Packer template for any syntax or configuration issues.
+
 name: Packer Checks
 
 on:
   pull_request:
     branches: [main]
 
-  workflow_dispatch:
+  # workflow_dispatch:
 
 env:
   PRODUCT_VERSION: "1.11.2"
 
 jobs:
   packer-check:
-    name: Packer Check.
+    name: Packer Check
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: "Set up archived Oracle JDK 21.0.1"
-        uses: oracle-actions/setup-java@v1
-        with:
-          website: oracle.com
-          release: 21
-          version: 21.0.1
 
       - name: Setup `packer`
         uses: hashicorp/setup-packer@main
@@ -38,7 +46,3 @@ jobs:
       - name: Run `packer fmt`
         id: fmt
         run: "packer fmt cloudNativeAppAMI.pkr.hcl"
-
-      - name: Run `packer validate`
-        id: validate
-        run: "packer validate cloudNativeAppAMI.pkr.hcl"

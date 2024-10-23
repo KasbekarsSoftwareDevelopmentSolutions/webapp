@@ -59,13 +59,6 @@ $RECYCLE.BIN/        # Windows recycle bin folder
 *.jar
 *.ear
 
-# Environment-specific properties (you might store these in external config services or environment variables)
-resources/
-*.env
-*.properties
-
-application.yml
-
 # --------------------------------------
 # IntelliJ IDEA-related ignores
 # --------------------------------------
@@ -125,3 +118,7 @@ temp/
 .classpath
 .settings/
 .DS_Store
+
+# Excluding Important Files
+applicationproperties.txt
+applicationtestproperties.txt

@@ -22,32 +22,29 @@ variable "ssh_username" {
   default = "ubuntu"
 }
 
-variable "profile" {
-  type    = string
-}
-
 variable "aws_demoacc" {
   type    = string
+  default = "820242918362"
 }
 
 variable "aws_devacc" {
   type    = string
+  default = "390403856687"
 }
 
 variable "subnet_id" {
-  type    = string
+  type = string
 }
 
 source "amazon-ebs" "ubuntu" {
   region          = "${var.aws_region}"
-  profile         = "${var.profile}"
   ami_name        = "CloudNativeApp_assignment4_${formatdate("YYYY_MM_DD_hh_mm_ss", timestamp())}"
   ami_description = "AMI for CSYE 6225 of assignment 4"
   ami_regions = [
     "${var.aws_region}"
   ]
   ami_users = [
-    "${var.aws_demoacc}",
+    "${var.aws_devacc}",
     "${var.aws_demoacc}",
   ]
 
@@ -78,7 +75,7 @@ build {
   }
 
   provisioner "shell" {
-    script = "./shellScripts/appDIRCreation.sh"
+    script = "./shellScripts/appDirCreation.sh"
   }
 
   provisioner "file" {
