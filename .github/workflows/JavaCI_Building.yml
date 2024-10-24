@@ -15,7 +15,7 @@ name: Java CI Building with Maven
 
 on:
   pull_request:
-    branches: [main] # Trigger workflow on pull request to main branch
+    branches: [ main ] # Trigger workflow on pull request to main branch
   # workflow_dispatch:
 
 jobs:

@@ -17,7 +17,7 @@ name: Packer Checks
 
 on:
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
   # workflow_dispatch:
 
@@ -45,4 +45,4 @@ jobs:
 
       - name: Run `packer fmt`
         id: fmt
-        run: "packer fmt cloudNativeAppAMI.pkr.hcl"
+        run: "packer fmt -check cloudNativeAppAMI.pkr.hcl"
