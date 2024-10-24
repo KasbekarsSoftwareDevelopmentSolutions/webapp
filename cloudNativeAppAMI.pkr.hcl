@@ -97,9 +97,9 @@ build {
     script = "./shellScripts/jdkSetup.sh"
   }
 
-  provisioner "shell" {
-    script = "./shellScripts/mysqlSetup.sh"
-  }
+#   provisioner "shell" {
+#     script = "./shellScripts/mysqlSetup.sh"
+#   }
 
   provisioner "shell" {
     script = "./shellScripts/appSetup.sh"
