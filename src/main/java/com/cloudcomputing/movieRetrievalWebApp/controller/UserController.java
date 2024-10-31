@@ -1,9 +1,11 @@
 package com.cloudcomputing.movieRetrievalWebApp.controller;
 
+import com.cloudcomputing.movieRetrievalWebApp.dto.imagedto.ImageResponseDTO;
 import com.cloudcomputing.movieRetrievalWebApp.dto.userdto.UserCreateDTO;
 import com.cloudcomputing.movieRetrievalWebApp.dto.userdto.UserResponseDTO;
 import com.cloudcomputing.movieRetrievalWebApp.dto.userdto.UserUpdateDTO;
 import com.cloudcomputing.movieRetrievalWebApp.model.User;
+import com.cloudcomputing.movieRetrievalWebApp.service.ImageService;
 import com.cloudcomputing.movieRetrievalWebApp.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -11,11 +13,15 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.security.Principal;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.Map;
 import java.util.Set;
@@ -35,24 +41,27 @@ public class UserController {
   @Autowired
   private UserService userService;
 
+  @Autowired
+  private ImageService imageService;
+
   /**
    * Handles the POST request to create a new user.
-   * 
+   *
    * @param userCreateDTO DTO containing information required to create a new
    *                      user.
    * @return ResponseEntity containing the created UserResponseDTO and HTTP
-   *         status.
+   * status.
    */
   @PostMapping
   public ResponseEntity<UserResponseDTO> createUser(@RequestBody Map<String, Object> requestBodyMap,
-      HttpServletRequest request) {
+                                                    HttpServletRequest request) {
 
     // Log the receipt of a POST request.
     LOGGER.info("POST Request Received.");
 
     // Log query parameters if present
     request.getParameterMap()
-        .forEach((key, value) -> LOGGER.warning("Query Parameter: " + key + " = " + String.join(",", value)));
+            .forEach((key, value) -> LOGGER.warning("Query Parameter: " + key + " = " + String.join(",", value)));
 
     // Check if there are any query parameters, return BAD_REQUEST if found
     if (!request.getParameterMap().isEmpty()) {
@@ -95,7 +104,7 @@ public class UserController {
     Optional<User> justAddedUser = ControllerUtils.getExsistingUser(userService, email);
     if (justAddedUser.isPresent()) {
       UserResponseDTO userResponseDTO = ControllerUtils
-          .setResponseObject(justAddedUser);
+              .setResponseObject(justAddedUser);
       // Log successful user creation and return the response.
       LOGGER.info("User created successfully: " + userResponseDTO);
       return new ResponseEntity<>(userResponseDTO, HttpStatus.CREATED);
@@ -108,7 +117,7 @@ public class UserController {
   /**
    * Handles the GET request to retrieve information about the currently
    * authenticated user.
-   * 
+   *
    * @param request   The HTTP request object.
    * @param principal Security principal object containing user credentials.
    * @return ResponseEntity containing the UserResponseDTO and HTTP status.
@@ -121,7 +130,7 @@ public class UserController {
 
     // Log query parameters if present
     request.getParameterMap()
-        .forEach((key, value) -> LOGGER.warning("Query Parameter: " + key + " = " + String.join(",", value)));
+            .forEach((key, value) -> LOGGER.warning("Query Parameter: " + key + " = " + String.join(",", value)));
 
     // Check if there are any query parameters, return BAD_REQUEST if found
     if (!request.getParameterMap().isEmpty()) {
@@ -150,22 +159,22 @@ public class UserController {
   /**
    * Handles the PUT request to update information of the currently authenticated
    * user.
-   * 
+   *
    * @param principal     Security principal object containing user credentials.
    * @param userUpdateDTO DTO containing updated user information.
    * @return ResponseEntity with HTTP status.
    */
   @PutMapping("/self")
   public ResponseEntity<UserResponseDTO> updateUser(Principal principal,
-      @RequestBody Map<String, Object> requestBodyMap,
-      HttpServletRequest request) {
+                                                    @RequestBody Map<String, Object> requestBodyMap,
+                                                    HttpServletRequest request) {
 
     // Log the receipt of a PUT request.
     LOGGER.info("PUT Request Received.");
 
     // Log query parameters if present
     request.getParameterMap()
-        .forEach((key, value) -> LOGGER.warning("Query Parameter: " + key + " = " + String.join(",", value)));
+            .forEach((key, value) -> LOGGER.warning("Query Parameter: " + key + " = " + String.join(",", value)));
 
     // Check if there are any query parameters, return BAD_REQUEST if found
     if (!request.getParameterMap().isEmpty()) {
@@ -204,25 +213,155 @@ public class UserController {
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
+  @PostMapping(value = "/self/pic", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<ImageResponseDTO> uploadUserImage(Principal principal, @RequestParam("file") MultipartFile file,
+                                           HttpServletRequest request) {
+
+    // Log the receipt of a POST request.
+    LOGGER.info("Image POST Request Received.");
+
+    // Log query parameters if present
+    request.getParameterMap()
+            .forEach((key, value) -> LOGGER.warning("Query Parameter: " + key + " = " + String.join(",", value)));
+
+    // Check if there are any query parameters, return BAD_REQUEST if found
+    if (!request.getParameterMap().isEmpty()) {
+      LOGGER.warning("Query parameters are not allowed in this request.");
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+    String email = principal.getName();
+
+    // Check if the authenticated user exists in the system.
+    if (ControllerUtils.checkUserExists(userService, email)) {
+      Optional<User> existingUser = ControllerUtils.getExsistingUser(userService, email);
+      if (existingUser.isPresent()) {
+        User user = existingUser.get();
+        try {
+          UUID userId = user.getUserId();
+          ImageResponseDTO response = imageService.uploadImage(file, userId);
+          return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (IOException e) {
+          return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
+        }
+      }
+    }
+    // Log if the user is not found and return a 404 response.
+    LOGGER.warning("User not found for email: " + email);
+    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+  }
+
+  @GetMapping(value = "/self/pic", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<ImageResponseDTO> getUserImage(Principal principal,  HttpServletRequest request,
+                                                       @RequestBody Map<String, Object> requestBodyMap) {
+
+    // Log the receipt of a POST request.
+    LOGGER.info("Image GET Request Received.");
+
+    // Log query parameters if present
+    request.getParameterMap()
+            .forEach((key, value) -> LOGGER.warning("Query Parameter: " + key + " = " + String.join(",", value)));
+
+    // Check if there are any query parameters, return BAD_REQUEST if found
+    if (!request.getParameterMap().isEmpty()) {
+      LOGGER.warning("Query parameters are not allowed in this request.");
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+    // Check for any fields in the request body; return BAD_REQUEST if found
+    if (!requestBodyMap.isEmpty()) {
+      LOGGER.warning("Request body should not contain any fields.");
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+    String email = principal.getName();
+
+    // Check if the authenticated user exists in the system.
+    if (ControllerUtils.checkUserExists(userService, email)) {
+      Optional<User> existingUser = ControllerUtils.getExsistingUser(userService, email);
+      if (existingUser.isPresent()) {
+        User user = existingUser.get();
+        try {
+          UUID userId = user.getUserId();
+          ImageResponseDTO imageResponseData = imageService.downloadImage(userId);
+          LOGGER.info("Request Successful. Returning ImageResponseDTO.");
+          return new ResponseEntity<>(imageResponseData, HttpStatus.OK);
+        } catch (IOException e) {
+          LOGGER.warning("Error fetching image: " + e.getMessage());
+          return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+      }
+    } else {
+      return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
+  @DeleteMapping("/self/pic")
+  public ResponseEntity<Void> deleteUserImage(Principal principal,  HttpServletRequest request,
+                                              @RequestBody Map<String, Object> requestBodyMap) {
+    // Log the receipt of a POST request.
+    LOGGER.info("Image DELETE Request Received.");
+
+    // Log query parameters if present
+    request.getParameterMap()
+            .forEach((key, value) -> LOGGER.warning("Query Parameter: " + key + " = " + String.join(",", value)));
+
+    // Check if there are any query parameters, return BAD_REQUEST if found
+    if (!request.getParameterMap().isEmpty()) {
+      LOGGER.warning("Query parameters are not allowed in this request.");
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+    // Check for any fields in the request body; return BAD_REQUEST if found
+    if (!requestBodyMap.isEmpty()) {
+      LOGGER.warning("Request body should not contain any fields.");
+      return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+    String email = principal.getName();
+
+    // Check if the authenticated user exists in the system.
+    if (ControllerUtils.checkUserExists(userService, email)) {
+      Optional<User> existingUser = ControllerUtils.getExsistingUser(userService, email);
+      if (existingUser.isPresent()) {
+        User user = existingUser.get();
+        try {
+          UUID userId = user.getUserId();
+          imageService.deleteImage(userId);
+          LOGGER.info("Request Successful. Image Deleted Successfully.");
+          return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (IOException e) {
+          LOGGER.warning("Error Deleting image: " + e.getMessage());
+          return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+      }
+    } else {
+      return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
   /**
    * Handles unsupported HTTP methods (DELETE, PATCH, OPTIONS, HEAD) on the /self
    * endpoint.
-   * 
+   *
    * @return ResponseEntity with 405 Method Not Allowed and appropriate headers.
    */
   @RequestMapping(value = "/self", method = {
-      RequestMethod.DELETE,
-      RequestMethod.PATCH,
-      RequestMethod.OPTIONS,
-      RequestMethod.HEAD
+          RequestMethod.DELETE,
+          RequestMethod.PATCH,
+          RequestMethod.OPTIONS,
+          RequestMethod.HEAD
   })
   public ResponseEntity<Void> methodNotAllowed() {
     // Log unsupported method attempts.
     LOGGER.warning("Unsupported HTTP method attempted on /self endpoint.");
     return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-        .header("Cache-Control", "no-cache, no-store, must-revalidate")
-        .header("Pragma", "no-cache")
-        .header("X-Content-Type-Options", "no-sniff")
-        .build();
+            .header("Cache-Control", "no-cache, no-store, must-revalidate")
+            .header("Pragma", "no-cache")
+            .header("X-Content-Type-Options", "no-sniff")
+            .build();
   }
 }
