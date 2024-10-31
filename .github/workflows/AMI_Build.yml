@@ -91,6 +91,8 @@ jobs:
           echo "spring.servlet.multipart.enabled=${{ vars.SPRING_SERVLET_MULTIPART_ENABLED }}" >> src/main/resources/application.properties
           echo "spring.servlet.multipart.max-file-size=${{ vars.SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE }}" >> src/main/resources/application.properties
           echo "spring.servlet.multipart.max-request-size=${{ vars.SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE }}" >> src/main/resources/application.properties
+          echo "logging.file.path=${{ vars.LOGGING_FILE_PATH }}" >> src/main/resources/application.properties
+          echo "logging.file.name=${{ vars.LOGGING_FILE_NAME }}" >> src/main/resources/application.properties
           echo "logging.level.com.cloudcomputing.movieRetrievalWebApp.package=${{ vars.LOGGING_LEVEL_COM_CLOUDCOMPUTING_MOVIERETRIEVALWEBAPP_PACKAGE }}" >> src/main/resources/application.properties
           echo "logging.level.org.springframework=${{ vars.LOGGING_LEVEL_ORG_SPRINGFRAMEWORK }}" >> src/main/resources/application.properties
           echo "logging.level.org.hibernate=${{ vars.LOGGING_LEVEL_ORG_HIBERNATE }}" >> src/main/resources/application.properties
