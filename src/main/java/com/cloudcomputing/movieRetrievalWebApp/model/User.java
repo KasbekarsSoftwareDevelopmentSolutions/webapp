@@ -3,13 +3,13 @@ package com.cloudcomputing.movieRetrievalWebApp.model;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
 public class User {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private long userId;
+  private UUID userId;
 
   @Column(nullable = false)
   private String emailAddress;
@@ -30,11 +30,13 @@ public class User {
   private LocalDateTime accountUpdated;
 
   public User() {
+    this.userId = UUID.randomUUID();
     this.accountCreated = LocalDateTime.now();
     this.accountUpdated = LocalDateTime.now();
   }
 
   public User(String emailAddress, String password, String firstName, String lastName) {
+    this.userId = UUID.randomUUID();
     this.emailAddress = emailAddress;
     this.password = password;
     this.firstName = firstName;
@@ -43,11 +45,11 @@ public class User {
     this.accountUpdated = LocalDateTime.now();
   }
 
-  public long getUserId() {
+  public UUID getUserId() {
     return userId;
   }
 
-  public void setUserId(long userId) {
+  public void setUserId(UUID userId) {
     this.userId = userId;
   }
 

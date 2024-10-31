@@ -1,19 +1,21 @@
 package com.cloudcomputing.movieRetrievalWebApp.dto.userdto;
 
+import java.util.UUID;
+
 public class UserResponseDTO {
 
-    private long id;
+    private UUID id;
     private String first_name;
     private String last_name;
     private String email;
     private String account_created;
     private String account_updated;
 
-    public long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
