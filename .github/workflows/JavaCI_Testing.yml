@@ -80,6 +80,15 @@ jobs:
           echo "spring.datasource.driver-class-name=${{ vars.SPRING_DATASOURCE_DRIVER_CLASS_NAME }}" >> src/main/resources/application.properties
           echo "spring.jpa.hibernate.ddl-auto=${{ vars.SPRING_JPA_HIBERNATE_DDL_AUTO }}" >> src/main/resources/application.properties
           echo "spring.jpa.show-sql=${{ vars.SPRING_JPA_SHOW_SQL }}" >> src/main/resources/application.properties
+          echo "cloud.aws.region.static=${{ vars.AWS_DEFAULT_REGION }}" >> src/main/resources/application.properties
+          echo "cloud.aws.s3.bucket-name=${{ secrets.CLOUD_AWS_S3_BUCKET_NAME }}" >> src/main/resources/application.properties
+          echo "cloud.aws.credentials.access-key=${{ secrets.AWS_ACCESS_KEY_ID }}" >> src/main/resources/application.properties
+          echo "cloud.aws.credentials.secret-key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> src/main/resources/application.properties
+          echo "spring.servlet.multipart.enabled=${{ vars.SPRING_SERVLET_MULTIPART_ENABLED }}" >> src/main/resources/application.properties
+          echo "spring.servlet.multipart.max-file-size=${{ vars.SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE }}" >> src/main/resources/application.properties
+          echo "spring.servlet.multipart.max-request-size=${{ vars.SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE }}" >> src/main/resources/application.properties
+          echo "logging.file.path=${{ vars.LOGGING_FILE_PATH }}" >> src/main/resources/application.properties
+          echo "logging.file.name=${{ vars.LOGGING_FILE_NAME }}" >> src/main/resources/application.properties
           echo "logging.level.com.cloudcomputing.movieRetrievalWebApp.package=${{ vars.LOGGING_LEVEL_COM_CLOUDCOMPUTING_MOVIERETRIEVALWEBAPP_PACKAGE }}" >> src/main/resources/application.properties
           echo "logging.level.org.springframework=${{ vars.LOGGING_LEVEL_ORG_SPRINGFRAMEWORK }}" >> src/main/resources/application.properties
           echo "logging.level.org.hibernate=${{ vars.LOGGING_LEVEL_ORG_HIBERNATE }}" >> src/main/resources/application.properties
