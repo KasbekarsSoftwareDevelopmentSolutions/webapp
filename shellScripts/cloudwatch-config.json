@@ -1,28 +1,53 @@
 {
 	"agent": {
 		"metrics_collection_interval": 10,
-		"logfile": "/var/logs/amazon-cloudwatch-agent.log"
+		"run_as_user": "root"
 	},
 	"logs": {
 		"logs_collected": {
 			"files": {
 				"collect_list": [
 					{
-						"file_path": "/home/csye6225/logs/csye6225_spring2023.log",
-						"log_group_name": "csye6225",
-						"log_stream_name": "webapp"
+						"file_path": "/var/log/messages",
+						"log_group_name": "SystemLogGroup",
+						"log_stream_name": "{instance_id}"
+					},
+					{
+						"file_path": "/home/csye6225/logs/cloudNativeApp_csye6225.log",
+						"log_group_name": "ApplicationLogGroup",
+						"log_stream_name": "{instance_id}"
 					}
 				]
 			}
-		},
-		"log_stream_name": "cloudwatch_log_stream"
+		}
 	},
-	"metrics":{
-		"metrics_collected":{
-			"statsd":{
-				"service_address":":8125",
-				"metrics_collection_interval":10,
-				"metrics_aggregation_interval":10
+	"metrics": {
+		"append_dimensions": {
+			"AutoScalingGroupName": "${aws:AutoScalingGroupName}",
+			"ImageId": "${aws:ImageId}",
+			"InstanceId": "${aws:InstanceId}",
+			"InstanceType": "${aws:InstanceType}"
+		},
+		"metrics_collected": {
+			"mem": {
+				"measurement": [
+					"mem_used_percent"
+				],
+				"metrics_collection_interval": 10,
+				"namespace": "SystemMetrics"
+			},
+			"statsd": {
+				"metrics_aggregation_interval": 10,
+				"metrics_collection_interval": 10,
+				"service_address": ":8125",
+				"namespace": "WebappMetrics"
+			},
+			"swap": {
+				"measurement": [
+					"swap_used_percent"
+				],
+				"metrics_collection_interval": 10,
+				"namespace": "SystemMetrics"
 			}
 		}
 	}

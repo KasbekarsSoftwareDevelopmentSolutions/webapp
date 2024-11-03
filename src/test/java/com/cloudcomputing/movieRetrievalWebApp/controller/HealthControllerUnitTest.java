@@ -1,5 +1,6 @@
 package com.cloudcomputing.movieRetrievalWebApp.controller;
 
+import com.timgroup.statsd.StatsDClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -27,6 +28,9 @@ class HealthControllerUnitTest {
   @Mock
   private HttpServletRequest request;
 
+  @Mock
+  private StatsDClient statsDClient;
+
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
@@ -39,6 +43,7 @@ class HealthControllerUnitTest {
 
     ResponseEntity<Void> response = healthController.healthCheck(request);
 
+    verify(statsDClient).incrementCounter("api.healthz.get.count");
     assertEquals(200, response.getStatusCodeValue()); // Check for OK status
   }
 

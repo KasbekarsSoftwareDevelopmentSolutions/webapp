@@ -10,22 +10,23 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class StatsDConfig {
 
-  @Value("true")
+  @Value("${statsd.publishMessage:true}")
   private boolean publishMessage;
 
-  @Value("localhost")
+  @Value("${statsd.metricHost:localhost}")
   private String metricHost;
 
-  @Value("8125")
+  @Value("${statsd.portNumber:8125}")
   private int portNumber;
 
-  @Value("csye6225")
+  @Value("${statsd.prefix:csye6225}")
   private String prefix;
 
   @Bean
-  public StatsDClient metricClient(){
-    if(publishMessage)
+  public StatsDClient metricClient() {
+    if (publishMessage) {
       return new NonBlockingStatsDClient(prefix, metricHost, portNumber);
+    }
     return new NoOpStatsDClient();
   }
 }

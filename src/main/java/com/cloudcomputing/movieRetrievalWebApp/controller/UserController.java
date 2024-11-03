@@ -9,6 +9,7 @@ import com.cloudcomputing.movieRetrievalWebApp.service.ImageService;
 import com.cloudcomputing.movieRetrievalWebApp.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.timgroup.statsd.StatsDClient;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,10 +35,11 @@ import java.util.Set;
 @RequestMapping("/v1/user")
 public class UserController {
 
-  // Logger instance for logging information and warnings.
   private static final Logger LOGGER = Logger.getLogger(UserController.class.getName());
 
-  // Service to handle user-related business logic.
+  @Autowired
+  private StatsDClient statsDClient;
+
   @Autowired
   private UserService userService;
 
@@ -55,8 +57,8 @@ public class UserController {
   @PostMapping
   public ResponseEntity<UserResponseDTO> createUser(@RequestBody Map<String, Object> requestBodyMap,
                                                     HttpServletRequest request) {
-
-    // Log the receipt of a POST request.
+    long startTime = System.currentTimeMillis();
+    statsDClient.incrementCounter("api.v1.user.createUser.count");
     LOGGER.info("POST Request Received.");
 
     // Log query parameters if present
@@ -66,6 +68,10 @@ public class UserController {
     // Check if there are any query parameters, return BAD_REQUEST if found
     if (!request.getParameterMap().isEmpty()) {
       LOGGER.warning("Query parameters are not allowed in this request.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.createUser.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
@@ -76,6 +82,10 @@ public class UserController {
     Set<String> actualFields = requestBodyMap.keySet();
     if (!expectedFields.containsAll(actualFields) || actualFields.size() > expectedFields.size()) {
       LOGGER.warning("Request body contains extra or invalid fields.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.createUser.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
@@ -85,6 +95,11 @@ public class UserController {
 
     // Validate the email and password in the incoming request.
     if (!ControllerUtils.validateEmailPassword(userCreateDTO)) {
+      LOGGER.warning("Email Address or Password input validation failed.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.createUser.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
@@ -93,6 +108,10 @@ public class UserController {
     // Check if a user with the given email already exists.
     if (ControllerUtils.checkUserExists(userService, email)) {
       LOGGER.warning("User already exists: " + email);
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.createUser.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
@@ -107,9 +126,17 @@ public class UserController {
               .setResponseObject(justAddedUser);
       // Log successful user creation and return the response.
       LOGGER.info("User created successfully: " + userResponseDTO);
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.createUser.response_time", elapsedTime);
+
       return new ResponseEntity<>(userResponseDTO, HttpStatus.CREATED);
     } else {
       LOGGER.warning("User Creation Failed.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.createUser.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.CREATED);
     }
   }
@@ -125,7 +152,8 @@ public class UserController {
   @GetMapping("/self")
   public ResponseEntity<UserResponseDTO> getUserInfo(HttpServletRequest request, Principal principal) {
 
-    // Log the receipt of a GET request.
+    long startTime = System.currentTimeMillis();
+    statsDClient.incrementCounter("api.v1.user.getUserInfo.count");
     LOGGER.info("GET Request Received.");
 
     // Log query parameters if present
@@ -135,6 +163,10 @@ public class UserController {
     // Check if there are any query parameters, return BAD_REQUEST if found
     if (!request.getParameterMap().isEmpty()) {
       LOGGER.warning("Query parameters are not allowed in this request.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.getUserInfo.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
@@ -148,11 +180,19 @@ public class UserController {
 
       // Log successful user retrieval and return the response.
       LOGGER.info("User info retrieved successfully: " + userResponseDTO);
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.getUserInfo.response_time", elapsedTime);
+
       return ResponseEntity.ok(userResponseDTO);
     }
 
     // Log if the user is not found and return a 404 response.
     LOGGER.warning("User not found for email: " + email);
+
+    long elapsedTime = System.currentTimeMillis() - startTime;
+    statsDClient.recordExecutionTime("api.v1.user.getUserInfo.response_time", elapsedTime);
+
     return new ResponseEntity<>(HttpStatus.NOT_FOUND);
   }
 
@@ -169,7 +209,8 @@ public class UserController {
                                                     @RequestBody Map<String, Object> requestBodyMap,
                                                     HttpServletRequest request) {
 
-    // Log the receipt of a PUT request.
+    long startTime = System.currentTimeMillis();
+    statsDClient.incrementCounter("api.v1.user.updateUser.count");
     LOGGER.info("PUT Request Received.");
 
     // Log query parameters if present
@@ -179,6 +220,10 @@ public class UserController {
     // Check if there are any query parameters, return BAD_REQUEST if found
     if (!request.getParameterMap().isEmpty()) {
       LOGGER.warning("Query parameters are not allowed in this request.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.updateUser.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
@@ -187,6 +232,10 @@ public class UserController {
     // Check if the authenticated user exists in the system.
     if (!ControllerUtils.checkUserExists(userService, email)) {
       LOGGER.warning("User doesn't exist: " + email);
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.updateUser.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
@@ -197,6 +246,10 @@ public class UserController {
     Set<String> actualFields = requestBodyMap.keySet();
     if (!allowedFields.containsAll(actualFields) || actualFields.isEmpty()) {
       LOGGER.warning("Request body contains extra or invalid fields.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.updateUser.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
@@ -210,6 +263,10 @@ public class UserController {
 
     // Log the successful update of user information.
     LOGGER.info("User Updated Successfully");
+
+    long elapsedTime = System.currentTimeMillis() - startTime;
+    statsDClient.recordExecutionTime("api.v1.user.updateUser.response_time", elapsedTime);
+
     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
@@ -217,7 +274,9 @@ public class UserController {
   public ResponseEntity<ImageResponseDTO> uploadUserImage(Principal principal, @RequestParam("file") MultipartFile file,
                                            HttpServletRequest request) {
 
-    // Log the receipt of a POST request.
+    long startTime = System.currentTimeMillis();
+    statsDClient.incrementCounter("api.v1.user.uploadUserImage.count");
+
     LOGGER.info("Image POST Request Received.");
 
     // Log query parameters if present
@@ -227,6 +286,10 @@ public class UserController {
     // Check if there are any query parameters, return BAD_REQUEST if found
     if (!request.getParameterMap().isEmpty()) {
       LOGGER.warning("Query parameters are not allowed in this request.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.uploadUserImage.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
@@ -240,14 +303,26 @@ public class UserController {
         try {
           UUID userId = user.getUserId();
           ImageResponseDTO response = imageService.uploadImage(file, userId);
+
+          long elapsedTime = System.currentTimeMillis() - startTime;
+          statsDClient.recordExecutionTime("api.v1.user.uploadUserImage.response_time", elapsedTime);
+
           return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (IOException e) {
+
+          long elapsedTime = System.currentTimeMillis() - startTime;
+          statsDClient.recordExecutionTime("api.v1.user.uploadUserImage.response_time", elapsedTime);
+
           return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
         }
       }
     }
     // Log if the user is not found and return a 404 response.
     LOGGER.warning("User not found for email: " + email);
+
+    long elapsedTime = System.currentTimeMillis() - startTime;
+    statsDClient.recordExecutionTime("api.v1.user.uploadUserImage.response_time", elapsedTime);
+
     return new ResponseEntity<>(HttpStatus.NOT_FOUND);
   }
 
@@ -255,7 +330,9 @@ public class UserController {
   public ResponseEntity<ImageResponseDTO> getUserImage(Principal principal,  HttpServletRequest request,
                                                        @RequestBody Map<String, Object> requestBodyMap) {
 
-    // Log the receipt of a POST request.
+    long startTime = System.currentTimeMillis();
+    statsDClient.incrementCounter("api.v1.user.getUserImage.count");
+
     LOGGER.info("Image GET Request Received.");
 
     // Log query parameters if present
@@ -265,12 +342,20 @@ public class UserController {
     // Check if there are any query parameters, return BAD_REQUEST if found
     if (!request.getParameterMap().isEmpty()) {
       LOGGER.warning("Query parameters are not allowed in this request.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.getUserImage.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
     // Check for any fields in the request body; return BAD_REQUEST if found
     if (!requestBodyMap.isEmpty()) {
       LOGGER.warning("Request body should not contain any fields.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.getUserImage.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
@@ -285,15 +370,30 @@ public class UserController {
           UUID userId = user.getUserId();
           ImageResponseDTO imageResponseData = imageService.downloadImage(userId);
           LOGGER.info("Request Successful. Returning ImageResponseDTO.");
+
+          long elapsedTime = System.currentTimeMillis() - startTime;
+          statsDClient.recordExecutionTime("api.v1.user.getUserImage.response_time", elapsedTime);
+
           return new ResponseEntity<>(imageResponseData, HttpStatus.OK);
         } catch (IOException e) {
           LOGGER.warning("Error fetching image: " + e.getMessage());
+
+          long elapsedTime = System.currentTimeMillis() - startTime;
+          statsDClient.recordExecutionTime("api.v1.user.getUserImage.response_time", elapsedTime);
+
           return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
       }
     } else {
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.getUserImage.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
     }
+
+    long elapsedTime = System.currentTimeMillis() - startTime;
+    statsDClient.recordExecutionTime("api.v1.user.getUserImage.response_time", elapsedTime);
 
     return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
   }
@@ -301,7 +401,8 @@ public class UserController {
   @DeleteMapping("/self/pic")
   public ResponseEntity<Void> deleteUserImage(Principal principal,  HttpServletRequest request,
                                               @RequestBody Map<String, Object> requestBodyMap) {
-    // Log the receipt of a POST request.
+    long startTime = System.currentTimeMillis();
+    statsDClient.incrementCounter("api.v1.user.deleteUserImage.count");
     LOGGER.info("Image DELETE Request Received.");
 
     // Log query parameters if present
@@ -311,12 +412,20 @@ public class UserController {
     // Check if there are any query parameters, return BAD_REQUEST if found
     if (!request.getParameterMap().isEmpty()) {
       LOGGER.warning("Query parameters are not allowed in this request.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.deleteUserImage.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
     // Check for any fields in the request body; return BAD_REQUEST if found
     if (!requestBodyMap.isEmpty()) {
       LOGGER.warning("Request body should not contain any fields.");
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.deleteUserImage.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
@@ -331,15 +440,31 @@ public class UserController {
           UUID userId = user.getUserId();
           imageService.deleteImage(userId);
           LOGGER.info("Request Successful. Image Deleted Successfully.");
+
+          long elapsedTime = System.currentTimeMillis() - startTime;
+          statsDClient.recordExecutionTime("api.v1.user.deleteUserImage.response_time", elapsedTime);
+
           return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (IOException e) {
           LOGGER.warning("Error Deleting image: " + e.getMessage());
+
+          long elapsedTime = System.currentTimeMillis() - startTime;
+          statsDClient.recordExecutionTime("api.v1.user.deleteUserImage.response_time", elapsedTime);
+
           return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
       }
     } else {
+
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.deleteUserImage.response_time", elapsedTime);
+
       return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
     }
+
+    long elapsedTime = System.currentTimeMillis() - startTime;
+    statsDClient.recordExecutionTime("api.v1.user.deleteUserImage.response_time", elapsedTime);
+
     return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
@@ -358,6 +483,7 @@ public class UserController {
   public ResponseEntity<Void> methodNotAllowed() {
     // Log unsupported method attempts.
     LOGGER.warning("Unsupported HTTP method attempted on /self endpoint.");
+    statsDClient.incrementCounter("api.v1.user.method_not_allowed.count");
     return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
             .header("Cache-Control", "no-cache, no-store, must-revalidate")
             .header("Pragma", "no-cache")

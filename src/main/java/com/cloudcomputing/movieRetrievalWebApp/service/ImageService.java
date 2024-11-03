@@ -2,6 +2,7 @@ package com.cloudcomputing.movieRetrievalWebApp.service;
 
 import com.cloudcomputing.movieRetrievalWebApp.dto.imagedto.ImageResponseDTO;
 import com.cloudcomputing.movieRetrievalWebApp.model.Image;
+import com.timgroup.statsd.StatsDClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,12 @@ public class ImageService {
   @Autowired
   private S3Client s3Client;
 
+  @Autowired
+  private StatsDClient statsDClient;
+
   public ImageResponseDTO uploadImage(MultipartFile file, UUID userId) throws IOException {
+    long startTime = System.currentTimeMillis();
+
     UUID imageId = UUID.randomUUID();
     String fileName = file.getOriginalFilename();
     String objectKey = userId + "/" + fileName;
@@ -34,6 +40,7 @@ public class ImageService {
             .build();
 
     s3Client.putObject(putObjectRequest, software.amazon.awssdk.core.sync.RequestBody.fromBytes(file.getBytes()));
+    statsDClient.recordExecutionTime("aws.s3.uploadImage.time", System.currentTimeMillis() - startTime);
 
     Image image = new Image();
     image.setFileName(fileName);
@@ -46,6 +53,8 @@ public class ImageService {
   }
 
   public ImageResponseDTO downloadImage(UUID userId) throws IOException {
+    long startTime = System.currentTimeMillis();
+
     String prefix = userId.toString() + "/"; // Prefix for the user's images
     ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
             .bucket(bucketName)
@@ -53,12 +62,14 @@ public class ImageService {
             .build();
 
     ListObjectsV2Response listResponse = s3Client.listObjectsV2(listRequest);
-    Optional<S3Object> imageObject = listResponse.contents().stream().findFirst(); // Get the first image (if any)
 
+    statsDClient.recordExecutionTime("aws.s3.downloadImage.time", System.currentTimeMillis() - startTime);
+
+    Optional<S3Object> imageObject = listResponse.contents().stream().findFirst();
     if (imageObject.isPresent()) {
       S3Object s3Object = imageObject.get();
-      String fileName = s3Object.key().substring(s3Object.key().lastIndexOf('/') + 1); // Extract filename
-      UUID imageId = UUID.fromString(s3Object.key().substring(0, s3Object.key().indexOf('/'))); // Get userId part
+      String fileName = s3Object.key().substring(s3Object.key().lastIndexOf('/') + 1);
+      UUID imageId = UUID.fromString(s3Object.key().substring(0, s3Object.key().indexOf('/')));
       LocalDate uploadDate = LocalDate.now(); // You may need to fetch this from your database
 
       // Create and return ImageResponseDTO
@@ -69,6 +80,8 @@ public class ImageService {
   }
 
   public void deleteImage(UUID userId) throws IOException {
+    long startTime = System.currentTimeMillis();
+
     String prefix = userId.toString() + "/"; // Prefix for the user's images
     ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
             .bucket(bucketName)
@@ -76,6 +89,7 @@ public class ImageService {
             .build();
 
     ListObjectsV2Response listResponse = s3Client.listObjectsV2(listRequest);
+
     Optional<S3Object> imageObject = listResponse.contents().stream().findFirst();
 
     if (imageObject.isPresent()) {
@@ -90,7 +104,9 @@ public class ImageService {
 
       // Delete the object from S3
       s3Client.deleteObject(deleteObjectRequest);
+      statsDClient.recordExecutionTime("aws.s3.deleteImage.time", System.currentTimeMillis() - startTime);
     } else {
+      statsDClient.recordExecutionTime("aws.s3.deleteImage.time", System.currentTimeMillis() - startTime);
       throw new IOException("No image found to delete for userId: " + userId);
     }
   }
