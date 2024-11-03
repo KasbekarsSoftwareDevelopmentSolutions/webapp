@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import com.timgroup.statsd.StatsDClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,6 +29,9 @@ public class UserDAOImplUnitTest {
 
   @Mock
   private UserRepo userRepo;
+
+  @Mock
+  private StatsDClient statsDClient;
 
   @InjectMocks
   private UserDAOImpl userDAOImpl;

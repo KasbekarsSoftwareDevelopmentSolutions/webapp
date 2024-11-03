@@ -23,14 +23,14 @@ on:
     types: [ closed ]
 
   # Allows you to run this workflow manually from the Actions tab
-  # workflow_dispatch:
+  workflow_dispatch:
 
 env:
   PRODUCT_VERSION: "1.11.2"
 
 jobs:
   build_AMI:
-    if: github.event.pull_request.merged == true
+#    if: github.event.pull_request.merged == true
     name: Building AMI
     runs-on: ubuntu-latest
 
@@ -40,7 +40,7 @@ jobs:
         ports:
           - 3306:3306
         env:
-          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_ROOT_PASSWORD: ${{ secrets.ROOT_USER_PASSWORD }}
           MYSQL_DATABASE: CloudAppDB
           MYSQL_USER: ${{ secrets.DB_USERNAME }}
           MYSQL_PASSWORD: ${{ secrets.DB_USER_PASSWORD }}

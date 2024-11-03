@@ -1,5 +1,6 @@
 package com.cloudcomputing.movieRetrievalWebApp.controller;
 
+import com.timgroup.statsd.StatsDClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -30,6 +31,9 @@ class UserControllerUnitTest {
 
   @Mock
   private UserService userService;
+
+  @Mock
+  private StatsDClient statsDClient;
 
   @InjectMocks
   private UserController userController;

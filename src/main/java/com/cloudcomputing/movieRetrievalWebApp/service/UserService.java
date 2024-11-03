@@ -19,6 +19,7 @@ public class UserService {
   private PasswordEncoder passwordEncoder; // Inject the password encoder
 
   public List<User> getAllUsers() {
+
     return userDAO.getAllUsers();
   }
 

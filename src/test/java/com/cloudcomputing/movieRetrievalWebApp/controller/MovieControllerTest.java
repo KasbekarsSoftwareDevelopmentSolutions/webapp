@@ -1,5 +1,6 @@
 package com.cloudcomputing.movieRetrievalWebApp.controller;
 
+import com.timgroup.statsd.StatsDClient;
 import org.springframework.http.MediaType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +34,9 @@ public class MovieControllerTest {
 
   @MockBean
   private JdbcTemplate jdbcTemplate;
+
+  @MockBean
+  private StatsDClient statsDClient;
 
   @BeforeEach
   public void setup() {
