@@ -38,8 +38,8 @@ variable "subnet_id" {
 
 source "amazon-ebs" "ubuntu" {
   region          = "${var.aws_region}"
-  ami_name        = "CloudNativeApp_assignment4_${formatdate("YYYY_MM_DD_hh_mm_ss", timestamp())}"
-  ami_description = "AMI for CSYE 6225 of assignment 4"
+  ami_name        = "CloudNativeApp_${formatdate("YYYY_MM_DD_hh_mm_ss", timestamp())}"
+  ami_description = "AMI for CSYE 6225 CloudNativeApp"
   ami_regions = [
     "${var.aws_region}"
   ]
