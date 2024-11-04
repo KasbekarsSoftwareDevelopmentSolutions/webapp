@@ -19,8 +19,8 @@ echo "Setting permissions for CloudWatch configuration file."
 sudo chmod 744 /opt/aws/amazon-cloudwatch-agent/cloudwatch-config.json
 
 # Step 4: Configure and start the Amazon CloudWatch Agent
-echo "Configuring and starting the Amazon CloudWatch Agent."
-sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/cloudwatch-config.json -s
+#echo "Configuring and starting the Amazon CloudWatch Agent."
+#sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/cloudwatch-config.json -s
 
 # Clean up
 rm -f amazon-cloudwatch-agent.deb
