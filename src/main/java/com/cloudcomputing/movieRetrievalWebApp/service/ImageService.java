@@ -1,8 +1,12 @@
 package com.cloudcomputing.movieRetrievalWebApp.service;
 
+import com.cloudcomputing.movieRetrievalWebApp.dao.ImageDAO;
 import com.cloudcomputing.movieRetrievalWebApp.dto.imagedto.ImageResponseDTO;
 import com.cloudcomputing.movieRetrievalWebApp.model.Image;
+import com.cloudcomputing.movieRetrievalWebApp.model.User;
 import com.timgroup.statsd.StatsDClient;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -22,6 +26,9 @@ public class ImageService {
   private String bucketName;
 
   @Autowired
+  ImageDAO imageDAO;
+
+  @Autowired
   private S3Client s3Client;
 
   @Autowired
@@ -30,8 +37,8 @@ public class ImageService {
   public ImageResponseDTO uploadImage(MultipartFile file, UUID userId) throws IOException {
     long startTime = System.currentTimeMillis();
 
-    UUID imageId = UUID.randomUUID();
     String fileName = file.getOriginalFilename();
+
     String objectKey = userId + "/" + fileName;
 
     PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -44,18 +51,18 @@ public class ImageService {
 
     Image image = new Image();
     image.setFileName(fileName);
-    image.setId(imageId);
     image.setUrl(bucketName + "/" + objectKey);
-    image.setUploadDate(LocalDate.now());
     image.setUserId(userId);
 
-    return new ImageResponseDTO(image.getFileName(), image.getId(), image.getUrl(), image.getUploadDate(), image.getUserId());
+    Image savedImageDB = this.addImage_DB(image);
+
+    return new ImageResponseDTO(savedImageDB.getFileName(), savedImageDB.getId(), savedImageDB.getUrl(), savedImageDB.getUploadDate(), savedImageDB.getUserId());
   }
 
   public ImageResponseDTO downloadImage(UUID userId) throws IOException {
     long startTime = System.currentTimeMillis();
 
-    String prefix = userId.toString() + "/"; // Prefix for the user's images
+    String prefix = userId.toString() + "/";
     ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
             .bucket(bucketName)
             .prefix(prefix)
@@ -69,11 +76,14 @@ public class ImageService {
     if (imageObject.isPresent()) {
       S3Object s3Object = imageObject.get();
       String fileName = s3Object.key().substring(s3Object.key().lastIndexOf('/') + 1);
-      UUID imageId = UUID.fromString(s3Object.key().substring(0, s3Object.key().indexOf('/')));
-      LocalDate uploadDate = LocalDate.now(); // You may need to fetch this from your database
+      UUID user_Id = UUID.fromString(s3Object.key().substring(0, s3Object.key().indexOf('/')));
+      Optional<Image> presentImage = this.getImageByUserId_DB(user_Id);
+      if (presentImage.isEmpty()) {
+        throw new EntityNotFoundException("Image with id " + userId + " does not exist");
+      }
+      Image image = presentImage.get();
 
-      // Create and return ImageResponseDTO
-      return new ImageResponseDTO(fileName, imageId, s3Object.key(), uploadDate, userId);
+      return new ImageResponseDTO(fileName, image.getId(), image.getUrl(), image.getUploadDate(), image.getUserId());
     } else {
       throw new IOException("Image not found for userId: " + userId);
     }
@@ -104,10 +114,23 @@ public class ImageService {
 
       // Delete the object from S3
       s3Client.deleteObject(deleteObjectRequest);
+      this.deleteImage_DB(userId);
       statsDClient.recordExecutionTime("aws.s3.deleteImage.time", System.currentTimeMillis() - startTime);
     } else {
       statsDClient.recordExecutionTime("aws.s3.deleteImage.time", System.currentTimeMillis() - startTime);
       throw new IOException("No image found to delete for userId: " + userId);
     }
+  }
+
+  public Image addImage_DB(Image image) {
+    return imageDAO.createImage(image);
+  }
+
+  public Optional<Image> getImageByUserId_DB(UUID userId) {
+    return imageDAO.getImageByUserId(userId);
+  }
+
+  public void deleteImage_DB(UUID userId) {
+    imageDAO.deleteImage(userId);
   }
 }
