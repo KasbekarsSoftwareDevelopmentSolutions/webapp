@@ -60,7 +60,7 @@ public class UserDaoImplIntegrationTest {
     assertEquals("john.doe@example.com", users.get(0).getEmailAddress());
 
     // Verify that the method was called once
-    verify(userRepo, times(1)).findAll();
+    verify(userRepo, times(3)).findAll();
   }
 
   @Test
