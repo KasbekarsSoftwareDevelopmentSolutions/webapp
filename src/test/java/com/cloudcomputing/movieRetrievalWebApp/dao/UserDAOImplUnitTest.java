@@ -11,9 +11,9 @@ import static org.mockito.ArgumentMatchers.any;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import com.timgroup.statsd.StatsDClient;
+import jakarta.persistence.EntityExistsException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -51,32 +51,6 @@ public class UserDAOImplUnitTest {
   }
 
   @Test
-  public void testGetUserById_userExists() {
-    // Arrange
-    User user = new User("john@example.com", "password", "John", "Doe");
-    when(userRepo.findById(1L)).thenReturn(Optional.of(user));
-
-    // Act
-    Optional<User> result = userDAOImpl.getUserById(1L);
-
-    // Assert
-    assertTrue(result.isPresent());
-    assertEquals("john@example.com", result.get().getEmailAddress());
-  }
-
-  @Test
-  public void testGetUserById_userDoesNotExist() {
-    // Arrange
-    when(userRepo.findById(1L)).thenReturn(Optional.empty());
-
-    // Act
-    Optional<User> result = userDAOImpl.getUserById(1L);
-
-    // Assert
-    assertFalse(result.isPresent());
-  }
-
-  @Test
   public void testCreateUser_userDoesNotExist() {
     // Arrange
     User newUser = new User("john@example.com", "password", "John", "Doe");
@@ -98,7 +72,7 @@ public class UserDAOImplUnitTest {
     when(userRepo.findAll()).thenReturn(Collections.singletonList(existingUser));
 
     // Act & Assert
-    assertThrows(IllegalArgumentException.class, () -> {
+    assertThrows(EntityExistsException.class, () -> {
       userDAOImpl.createUser(existingUser);
     });
   }
@@ -128,30 +102,6 @@ public class UserDAOImplUnitTest {
     // Act & Assert
     assertThrows(IllegalArgumentException.class, () -> {
       userDAOImpl.updateUser("nonexistent@example.com", updatedUser);
-    });
-  }
-
-  @Test
-  public void testDeleteUser_userExists() {
-    // Arrange
-    User existingUser = new User("john@example.com", "password", "John", "Doe");
-    when(userRepo.findAll()).thenReturn(Collections.singletonList(existingUser));
-
-    // Act
-    userDAOImpl.deleteUser("john@example.com");
-
-    // Assert
-    verify(userRepo, times(1)).delete(existingUser);
-  }
-
-  @Test
-  public void testDeleteUser_userDoesNotExist() {
-    // Arrange
-    when(userRepo.findAll()).thenReturn(Collections.emptyList());
-
-    // Act & Assert
-    assertThrows(IllegalArgumentException.class, () -> {
-      userDAOImpl.deleteUser("nonexistent@example.com");
     });
   }
 }

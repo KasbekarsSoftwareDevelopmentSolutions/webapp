@@ -64,31 +64,6 @@ public class UserDaoImplIntegrationTest {
   }
 
   @Test
-  public void testGetUserById_userExists() {
-    // Arrange
-    when(userRepo.findById(anyLong())).thenReturn(Optional.of(sampleUser));
-
-    // Act
-    Optional<User> foundUser = userDAOImpl.getUserById(1L);
-
-    // Assert
-    assertTrue(foundUser.isPresent());
-    assertEquals("john.doe@example.com", foundUser.get().getEmailAddress());
-  }
-
-  @Test
-  public void testGetUserById_userDoesNotExist() {
-    // Arrange
-    when(userRepo.findById(anyLong())).thenReturn(Optional.empty());
-
-    // Act
-    Optional<User> foundUser = userDAOImpl.getUserById(1L);
-
-    // Assert
-    assertFalse(foundUser.isPresent());
-  }
-
-  @Test
   public void testCreateUser_userDoesNotExist() {
     // Arrange
     when(userRepo.findAll()).thenReturn(Collections.emptyList());
@@ -116,17 +91,5 @@ public class UserDaoImplIntegrationTest {
     // Assert
     assertEquals("newpassword", result.getPassword());
     assertEquals("Smith", result.getLastName());
-  }
-
-  @Test
-  public void testDeleteUser_userExists() {
-    // Arrange
-    when(userRepo.findAll()).thenReturn(Collections.singletonList(sampleUser));
-
-    // Act
-    userDAOImpl.deleteUser("john.doe@example.com");
-
-    // Assert
-    verify(userRepo, times(1)).delete(sampleUser);
   }
 }

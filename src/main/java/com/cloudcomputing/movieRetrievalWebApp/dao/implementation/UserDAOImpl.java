@@ -4,9 +4,10 @@ import com.cloudcomputing.movieRetrievalWebApp.dao.UserDAO;
 import com.cloudcomputing.movieRetrievalWebApp.model.User;
 import com.cloudcomputing.movieRetrievalWebApp.repository.UserRepo;
 import com.timgroup.statsd.StatsDClient;
+import jakarta.persistence.EntityExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Repository;
+import org.springframework.dao.DataAccessException;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,20 +25,13 @@ public class UserDAOImpl implements UserDAO {
   public List<User> getAllUsers() {
     long startTime = System.currentTimeMillis();
 
-    List<User> users = userRepo.findAll();
-
-    statsDClient.recordExecutionTime("db.query.getAllUsers.time", System.currentTimeMillis() - startTime);
-    return users;
-  }
-
-  @Override
-  public Optional<User> getUserById(Long id) {
-    long startTime = System.currentTimeMillis();
-
-    Optional<User> user = userRepo.findById(id);
-
-    statsDClient.recordExecutionTime("db.query.getUserById.time", System.currentTimeMillis() - startTime);
-    return user;
+    try {
+      return userRepo.findAll();
+    } catch (DataAccessException e) {
+      throw e;
+    } finally {
+      statsDClient.recordExecutionTime("db.query.getAllUsers.time", System.currentTimeMillis() - startTime);
+    }
   }
 
   @Override
@@ -46,14 +40,14 @@ public class UserDAOImpl implements UserDAO {
 
     try {
       if (userRepo.findAll().stream().anyMatch(u -> u.getEmailAddress().equals(user.getEmailAddress()))) {
-        throw new IllegalArgumentException("User with this email already exists.");
+        throw new EntityExistsException("User with this email already exists.");
       }
-      User savedUser = userRepo.save(user);
 
+      return userRepo.save(user);
+    } catch (EntityExistsException e) {
+      throw e;
+    } finally {
       statsDClient.recordExecutionTime("db.query.createUser.time", System.currentTimeMillis() - startTime);
-      return savedUser;
-    } catch (InvalidDataAccessApiUsageException e) {
-      throw new IllegalArgumentException("User with this email already exists.", e);
     }
   }
 
@@ -61,37 +55,25 @@ public class UserDAOImpl implements UserDAO {
   public User updateUser(String emailId, User updatedUserDetails) {
     long startTime = System.currentTimeMillis();
 
-    Optional<User> userOptional = userRepo.findAll().stream()
-        .filter(user -> user.getEmailAddress().equals(emailId))
-        .findFirst();
+    try {
+      Optional<User> userOptional = userRepo.findAll().stream()
+              .filter(user -> user.getEmailAddress().equals(emailId))
+              .findFirst();
 
-    if (userOptional.isPresent()) {
-      User user = userOptional.get();
-      user.setFirstName(updatedUserDetails.getFirstName());
-      user.setLastName(updatedUserDetails.getLastName());
-      user.setPassword(updatedUserDetails.getPassword());
-      User updatedUser = userRepo.save(user);
+      if (userOptional.isPresent()) {
+        User user = userOptional.get();
+        user.setFirstName(updatedUserDetails.getFirstName());
+        user.setLastName(updatedUserDetails.getLastName());
+        user.setPassword(updatedUserDetails.getPassword());
 
+        return userRepo.save(user);
+      } else {
+        throw new IllegalArgumentException("User with email " + emailId + " not found.");
+      }
+    } catch (IllegalArgumentException e) {
+      throw e;
+    } finally {
       statsDClient.recordExecutionTime("db.query.updateUser.time", System.currentTimeMillis() - startTime);
-      return updatedUser;
-    } else {
-      throw new IllegalArgumentException("User with email " + emailId + " not found.");
-    }
-  }
-
-  @Override
-  public void deleteUser(String emailId) {
-    long startTime = System.currentTimeMillis();
-
-    Optional<User> userOptional = userRepo.findAll().stream()
-        .filter(user -> user.getEmailAddress().equals(emailId))
-        .findFirst();
-
-    if (userOptional.isPresent()) {
-      userRepo.delete(userOptional.get());
-      statsDClient.recordExecutionTime("db.query.deleteUser.time", System.currentTimeMillis() - startTime);
-    } else {
-      throw new IllegalArgumentException("User with email " + emailId + " not found.");
     }
   }
 }

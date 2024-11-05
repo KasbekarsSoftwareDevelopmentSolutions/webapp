@@ -43,26 +43,6 @@ public class UserServiceTest {
   }
 
   @Test
-  public void testGetAllUsers() {
-    when(userDAO.getAllUsers()).thenReturn(Arrays.asList(user));
-
-    List<User> users = userService.getAllUsers();
-
-    assertEquals(1, users.size());
-    verify(userDAO, times(1)).getAllUsers();
-  }
-
-  @Test
-  public void testGetUserById() {
-    when(userDAO.getUserById(1L)).thenReturn(Optional.of(user));
-
-    Optional<User> foundUser = userService.getUserById(1L);
-
-    assertTrue(foundUser.isPresent());
-    assertEquals("test@example.com", foundUser.get().getEmailAddress());
-  }
-
-  @Test
   public void testGetUserByEmail() {
     when(userDAO.getAllUsers()).thenReturn(Arrays.asList(user));
 
@@ -95,14 +75,5 @@ public class UserServiceTest {
     assertEquals(user, updatedUser);
     verify(passwordEncoder, times(1)).encode("password");
     verify(userDAO, times(1)).updateUser(eq("test@example.com"), any(User.class));
-  }
-
-  @Test
-  public void testDeleteUser() {
-    doNothing().when(userDAO).deleteUser(anyString());
-
-    userService.deleteUser("test@example.com");
-
-    verify(userDAO, times(1)).deleteUser("test@example.com");
   }
 }

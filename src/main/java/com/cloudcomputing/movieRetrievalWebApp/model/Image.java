@@ -1,15 +1,36 @@
 package com.cloudcomputing.movieRetrievalWebApp.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.time.LocalDate;
 import java.util.UUID;
 
+@Entity
+@Table(name = "images")
 public class Image {
 
-  private String fileName;
+  @Id
   private UUID id;
-  private String url;
-  private LocalDate uploadDate;
+
+  @Column(nullable = false)
   private UUID userId;
+
+  @Column(nullable = false)
+  private String fileName;
+
+  @Column(nullable = false)
+  private String url;
+
+  @Column(nullable = false)
+  private LocalDate uploadDate;
+
+  public Image() {
+    this.id = UUID.randomUUID();
+    this.uploadDate = LocalDate.now();
+  }
 
   // Getters and Setters
   public String getFileName() { return fileName; }
@@ -22,7 +43,6 @@ public class Image {
   public void setUrl(String url) { this.url = url; }
 
   public LocalDate getUploadDate() { return uploadDate; }
-  public void setUploadDate(LocalDate uploadDate) { this.uploadDate = uploadDate; }
 
   public UUID getUserId() { return userId; }
   public void setUserId(UUID userId) { this.userId = userId; }
