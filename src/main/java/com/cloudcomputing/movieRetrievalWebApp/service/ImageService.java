@@ -3,9 +3,7 @@ package com.cloudcomputing.movieRetrievalWebApp.service;
 import com.cloudcomputing.movieRetrievalWebApp.dao.ImageDAO;
 import com.cloudcomputing.movieRetrievalWebApp.dto.imagedto.ImageResponseDTO;
 import com.cloudcomputing.movieRetrievalWebApp.model.Image;
-import com.cloudcomputing.movieRetrievalWebApp.model.User;
 import com.timgroup.statsd.StatsDClient;
-import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +13,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
-import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
