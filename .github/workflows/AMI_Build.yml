@@ -86,6 +86,7 @@ jobs:
           echo "spring.jpa.show-sql=${{ vars.SPRING_JPA_SHOW_SQL }}" >> src/main/resources/application.properties
           echo "cloud.aws.region.static=${{ vars.AWS_DEFAULT_REGION }}" >> src/main/resources/application.properties
           echo "cloud.aws.s3.bucket-name=${{ secrets.CLOUD_AWS_S3_BUCKET_NAME }}" >> src/main/resources/application.properties
+          echo "cloud.aws.sns.topic-name=${{ secrets.CLOUD_AWS_SNS_TOPIC_NAME }}" >> src/main/resources/application.properties
           echo "cloud.aws.credentials.access-key=${{ secrets.AWS_ACCESS_KEY_ID }}" >> src/main/resources/application.properties
           echo "cloud.aws.credentials.secret-key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> src/main/resources/application.properties
           echo "spring.servlet.multipart.enabled=${{ vars.SPRING_SERVLET_MULTIPART_ENABLED }}" >> src/main/resources/application.properties
@@ -145,3 +146,57 @@ jobs:
         id: build
         run: |
           packer build -var "subnet_id=${{ vars.SUBNET_ID }}" cloudNativeAppAMI.pkr.hcl
+
+      - name: Create New Launch Template Version
+        id: create_launch_template_version
+        run: |
+          # Fetch the latest AMI ID created by Packer
+          AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=tag:Name,Values=myapp-*" --query "Images | sort_by(@, &CreationDate)[-1].ImageId" --output text)
+          echo "Latest AMI ID: $AMI_ID"
+          
+          # Create a new version of the launch template with the latest AMI ID
+          aws ec2 create-launch-template-version \
+            --launch-template-id ${{ secrets.LAUNCH_TEMPLATE_ID }} \
+            --source-version ${{ vars.LAUNCH_TEMPLATE_VERSION }} \
+            --version-description "Updated AMI version" \
+            --launch-template-data '{"ImageId":"'$AMI_ID'"}'
+          
+          # Output the new launch template version
+          NEW_VERSION=$(aws ec2 describe-launch-templates --launch-template-ids ${{ secrets.LAUNCH_TEMPLATE_ID }} --query "LaunchTemplates[0].LatestVersionNumber" --output text)
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          
+      - name: Trigger Instance Refresh
+        id: trigger_instance_refresh
+        run: |
+          # Start an instance refresh
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name ${{ secrets.AUTOSCALING_GROUP_NAME }} \
+            --preferences '{"MinHealthyPercentage": 90, "InstanceWarmup": 300}' \
+            --query "InstanceRefreshId" --output text)
+          
+          echo "Instance Refresh ID: $REFRESH_ID"
+          echo "REFRESH_ID=$REFRESH_ID" >> $GITHUB_ENV
+          
+      - name: Wait for Instance Refresh
+        id: wait_for_instance_refresh
+        run: |
+          # Poll the status of the instance refresh
+          while true; do
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name ${{ secrets.AUTOSCALING_GROUP_NAME }} \
+              --query "InstanceRefreshes[?InstanceRefreshId=='$REFRESH_ID'].Status" \
+              --output text)
+
+            echo "Current Instance Refresh Status: $STATUS"
+
+            if [ "$STATUS" == "Successful" ]; then
+              echo "Instance refresh completed successfully."
+              break
+            elif [ "$STATUS" == "Failed" ]; then
+              echo "Instance refresh failed."
+              exit 1
+            fi
+
+            echo "Waiting for instance refresh to complete..."
+            sleep 30
+          done
