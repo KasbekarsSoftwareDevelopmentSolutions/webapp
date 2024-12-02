@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public class VerificationTokenDAOImpl implements VerificationTokenDAO {
@@ -25,12 +26,12 @@ public class VerificationTokenDAOImpl implements VerificationTokenDAO {
   }
 
   @Override
-  public Optional<VerificationToken> getVerificationTokenByToken(String token) {
+  public Optional<VerificationToken> getVerificationTokenByToken(UUID token) {
     return repository.findByToken(token);
   }
 
   @Override
-  public Optional<VerificationToken> getVerificationTokenByUserId(String userId) {
+  public Optional<VerificationToken> getVerificationTokenByUserId(UUID userId) {
     return repository.findByUserId(userId);
   }
 

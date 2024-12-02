@@ -2,6 +2,7 @@ package com.cloudcomputing.movieRetrievalWebApp.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 public class VerificationToken {
@@ -11,13 +12,13 @@ public class VerificationToken {
   private Long tokenId;
 
   @Column(unique = true, nullable = false)
-  private String token;
+  private UUID token;
 
   @Column(nullable = false)
   private String userEmail;
 
   @Column(nullable = false)
-  private String userId;
+  private UUID userId;
 
   @Column(nullable = false)
   private LocalDateTime expiryDate;
@@ -34,11 +35,11 @@ public class VerificationToken {
     this.tokenId = tokenId;
   }
 
-  public String getToken() {
+  public UUID getToken() {
     return token;
   }
 
-  public void setToken(String token) {
+  public void setToken(UUID token) {
     this.token = token;
   }
 
@@ -50,11 +51,11 @@ public class VerificationToken {
     this.userEmail = userEmail;
   }
 
-  public String getUserId() {
+  public UUID getUserId() {
     return userId;
   }
 
-  public void setUserId(String userId) {
+  public void setUserId(UUID userId) {
     this.userId = userId;
   }
 

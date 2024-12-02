@@ -26,13 +26,13 @@ public class VerificationService {
    * @param userEmail The email of the user.
    * @return The created VerificationToken.
    */
-  public VerificationToken createVerificationToken(String userId, String userEmail) {
+  public VerificationToken createVerificationToken(UUID userId, String userEmail) {
     VerificationToken token = new VerificationToken();
-    token.setToken(UUID.randomUUID().toString()); // Generate a unique token
+    token.setToken(UUID.randomUUID()); // Generate a unique token
     token.setUserId(userId);
     token.setUserEmail(userEmail);
-    token.setExpiryDate(LocalDateTime.now().plusHours(24)); // Set expiration to 24 hours from now
-    token.setVerificationFlag(false); // Initially not verified
+    token.setExpiryDate(LocalDateTime.now().plusHours(2));
+    token.setVerificationFlag(false);
 
     verificationTokenDAO.saveVerificationToken(token);
     return token;
@@ -44,7 +44,7 @@ public class VerificationService {
    * @param token The token value.
    * @return Optional containing the VerificationToken if found, or empty if not.
    */
-  public Optional<VerificationToken> getVerificationTokenByToken(String token) {
+  public Optional<VerificationToken> getVerificationTokenByToken(UUID token) {
     return verificationTokenDAO.getVerificationTokenByToken(token);
   }
 
@@ -54,7 +54,7 @@ public class VerificationService {
    * @param userId The ID of the user.
    * @return Optional containing the VerificationToken if found, or empty if not.
    */
-  public Optional<VerificationToken> getVerificationTokenByUserId(String userId) {
+  public Optional<VerificationToken> getVerificationTokenByUserId(UUID userId) {
     return verificationTokenDAO.getVerificationTokenByUserId(userId);
   }
 
@@ -78,12 +78,27 @@ public class VerificationService {
   }
 
   /**
+   * Check if a token is already verified.
+   *
+   * @param token The token value to check.
+   * @return true if the token is already verified, false otherwise.
+   */
+  public boolean isTokenAlreadyVerified(UUID token) {
+    Optional<VerificationToken> optionalToken = verificationTokenDAO.getVerificationTokenByToken(token);
+    if (optionalToken.isPresent()) {
+      VerificationToken verificationToken = optionalToken.get();
+      return verificationToken.getVerificationFlag();
+    }
+    return false; // Token not found
+  }
+
+  /**
    * Verify a token by setting its verification flag to true.
    *
    * @param token The token value.
    * @return true if the token was successfully verified, false otherwise.
    */
-  public boolean verifyToken(String token) {
+  public boolean verifyToken(UUID token) {
     Optional<VerificationToken> optionalToken = verificationTokenDAO.getVerificationTokenByToken(token);
     if (optionalToken.isPresent()) {
       VerificationToken verificationToken = optionalToken.get();

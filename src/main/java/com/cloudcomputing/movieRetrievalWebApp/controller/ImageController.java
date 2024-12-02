@@ -26,6 +26,8 @@ import java.util.logging.Logger;
 /**
  * Controller class to handle image-related operations for authenticated users.
  * Provides endpoints for uploading, retrieving, and deleting user profile images.
+ * Incorporates user verification and request validation, ensuring robust and secure interactions.
+ * Includes response time tracking and query parameter validation for improved monitoring and security.
  */
 @RestController
 @RequestMapping("/v1/user/self")
@@ -47,37 +49,33 @@ public class ImageController {
 
   /**
    * Middleware to check if the authenticated user is verified.
+   * Verifies the user by retrieving the verification token associated with their account.
+   * Logs warnings if the user is not found or verification fails.
    *
-   * @param principal Security principal containing user credentials.
-   * @return ResponseEntity with 403 FORBIDDEN if the user is not verified, null otherwise.
+   * @param email The email of the authenticated user.
+   * @return true if the user is verified, false otherwise.
    */
-  private ResponseEntity<Void> checkUserVerified(Principal principal) {
-    String email = principal.getName();
+  private Boolean checkUserVerified(String email) {
     Optional<User> user = userService.getUserByEmail(email);
 
     if (user.isEmpty()) {
       LOGGER.warning("User not found: " + email);
-      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    boolean isVerified = verificationService.getVerificationTokenByUserId(user.get().getUserId().toString())
+    return verificationService.getVerificationTokenByUserId(user.get().getUserId())
       .map(token -> token.getVerificationFlag() != null && token.getVerificationFlag())
-      .orElse(false);
-
-    if (!isVerified) {
-      LOGGER.warning("User is not verified: " + email);
-      return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-    }
-    return null; // User is verified
+      .orElse(false); // User is verified
   }
 
   /**
    * Uploads a profile image for the authenticated user.
+   * Validates query parameters, checks user verification status, and processes the image upload.
+   * Logs the request and records metrics for monitoring.
    *
-   * @param principal the security principal containing the user's email.
-   * @param file      the image file to be uploaded.
-   * @param request   the HTTP request object.
-   * @return ResponseEntity containing the {@link ImageResponseDTO} on success or the appropriate HTTP status.
+   * @param principal The security principal containing the user's email.
+   * @param file      The image file to be uploaded.
+   * @param request   The HTTP request object, used to validate parameters.
+   * @return ResponseEntity containing the {@link ImageResponseDTO} on success or the appropriate HTTP status code.
    */
   @PostMapping(value = "/pic", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ImageResponseDTO> uploadUserImage(Principal principal, @RequestParam("file") MultipartFile file,
@@ -102,16 +100,20 @@ public class ImageController {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
-    // Check if the user is verified
-    ResponseEntity<Void> verificationCheck = checkUserVerified(principal);
-    if (verificationCheck != null) {
-      return new ResponseEntity<>(verificationCheck.getStatusCode());
-    }
-
     String email = principal.getName();
 
     // Check if the authenticated user exists in the system.
     if (ControllerUtils.checkUserExists(userService, email)) {
+
+      // Check if the user is verified
+      if (!checkUserVerified(email)) {
+        LOGGER.warning("User is not verified: " + email);
+        long elapsedTime = System.currentTimeMillis() - startTime;
+        statsDClient.recordExecutionTime("api.v1.user.getUserInfo.response_time", elapsedTime);
+        return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+      }
+      LOGGER.info("User is verified: " + email);
+
       Optional<User> existingUser = ControllerUtils.getExsistingUser(userService, email);
       if (existingUser.isPresent()) {
         User user = existingUser.get();
@@ -143,11 +145,13 @@ public class ImageController {
 
   /**
    * Retrieves the profile image of the authenticated user.
+   * Validates query parameters and request body to ensure compliance with the API contract.
+   * Logs request details and records response time metrics.
    *
-   * @param principal      the security principal containing the user's email.
-   * @param request        the HTTP request object.
-   * @param requestBodyMap the request body, expected to be empty.
-   * @return ResponseEntity containing the {@link ImageResponseDTO} on success or the appropriate HTTP status.
+   * @param principal      The security principal containing the user's email.
+   * @param request        The HTTP request object, used to validate parameters.
+   * @param requestBodyMap The request body, expected to be empty; validated for compliance.
+   * @return ResponseEntity containing the {@link ImageResponseDTO} on success or the appropriate HTTP status code.
    */
   @GetMapping(value = "/pic", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ImageResponseDTO> getUserImage(Principal principal,  HttpServletRequest request,
@@ -182,16 +186,20 @@ public class ImageController {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
-    // Check if the user is verified
-    ResponseEntity<Void> verificationCheck = checkUserVerified(principal);
-    if (verificationCheck != null) {
-      return new ResponseEntity<>(verificationCheck.getStatusCode());
-    }
-
     String email = principal.getName();
 
     // Check if the authenticated user exists in the system.
     if (ControllerUtils.checkUserExists(userService, email)) {
+
+      // Check if the user is verified
+      if (!checkUserVerified(email)) {
+        LOGGER.warning("User is not verified: " + email);
+        long elapsedTime = System.currentTimeMillis() - startTime;
+        statsDClient.recordExecutionTime("api.v1.user.getUserInfo.response_time", elapsedTime);
+        return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+      }
+      LOGGER.info("User is verified: " + email);
+
       Optional<User> existingUser = ControllerUtils.getExsistingUser(userService, email);
       if (existingUser.isPresent()) {
         User user = existingUser.get();
@@ -229,11 +237,13 @@ public class ImageController {
 
   /**
    * Deletes the profile image of the authenticated user.
+   * Validates query parameters and request body, checks user verification status, and processes the image deletion.
+   * Logs request details and tracks response time metrics for monitoring.
    *
-   * @param principal      the security principal containing the user's email.
-   * @param request        the HTTP request object.
-   * @param requestBodyMap the request body, expected to be empty.
-   * @return ResponseEntity with the appropriate HTTP status.
+   * @param principal      The security principal containing the user's email.
+   * @param request        The HTTP request object, used to validate parameters.
+   * @param requestBodyMap The request body, expected to be empty; validated for compliance.
+   * @return ResponseEntity with the appropriate HTTP status code.
    */
   @DeleteMapping("/pic")
   public ResponseEntity<Void> deleteUserImage(Principal principal,  HttpServletRequest request,
@@ -266,16 +276,20 @@ public class ImageController {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
-    // Check if the user is verified
-    ResponseEntity<Void> verificationCheck = checkUserVerified(principal);
-    if (verificationCheck != null) {
-      return new ResponseEntity<>(verificationCheck.getStatusCode());
-    }
-
     String email = principal.getName();
 
     // Check if the authenticated user exists in the system.
     if (ControllerUtils.checkUserExists(userService, email)) {
+
+      // Check if the user is verified
+      if (!checkUserVerified(email)) {
+        LOGGER.warning("User is not verified: " + email);
+        long elapsedTime = System.currentTimeMillis() - startTime;
+        statsDClient.recordExecutionTime("api.v1.user.getUserInfo.response_time", elapsedTime);
+        return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+      }
+      LOGGER.info("User is verified: " + email);
+
       Optional<User> existingUser = ControllerUtils.getExsistingUser(userService, email);
       if (existingUser.isPresent()) {
         User user = existingUser.get();
@@ -312,10 +326,11 @@ public class ImageController {
   }
 
   /**
-   * Handles unsupported HTTP methods (PUT, PATCH, OPTIONS, HEAD) on the /pic
-   * endpoint.
+   * Handles unsupported HTTP methods (PUT, PATCH, OPTIONS, HEAD) on the /pic endpoint.
+   * Responds with 405 Method Not Allowed and includes appropriate headers to ensure no caching.
+   * Logs any attempts to use unsupported methods and tracks metrics for monitoring.
    *
-   * @return ResponseEntity with 405 Method Not Allowed and appropriate headers.
+   * @return ResponseEntity with 405 Method Not Allowed status and appropriate headers.
    */
   @RequestMapping(value = "/pic", method = {
     RequestMethod.PUT,

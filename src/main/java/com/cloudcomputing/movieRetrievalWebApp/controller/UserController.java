@@ -4,6 +4,7 @@ import com.cloudcomputing.movieRetrievalWebApp.dto.userdto.UserCreateDTO;
 import com.cloudcomputing.movieRetrievalWebApp.dto.userdto.UserResponseDTO;
 import com.cloudcomputing.movieRetrievalWebApp.dto.userdto.UserUpdateDTO;
 import com.cloudcomputing.movieRetrievalWebApp.model.User;
+import com.cloudcomputing.movieRetrievalWebApp.model.VerificationToken;
 import com.cloudcomputing.movieRetrievalWebApp.service.MessagePubService;
 import com.cloudcomputing.movieRetrievalWebApp.service.UserService;
 import com.cloudcomputing.movieRetrievalWebApp.service.VerificationService;
@@ -26,6 +27,7 @@ import java.util.Set;
 /**
  * UserController handles API requests related to user operations such as
  * creating, retrieving, updating, and deleting user information.
+ * Includes validation, logging, and metrics tracking.
  */
 @RestController
 @RequestMapping("/v1/user")
@@ -48,36 +50,29 @@ public class UserController {
   /**
    * Middleware to check if the authenticated user is verified.
    *
-   * @param principal Security principal containing user credentials.
-   * @return ResponseEntity with 403 FORBIDDEN if the user is not verified, null otherwise.
+   * @param email The email address of the authenticated user.
+   * @return Boolean indicating if the user is verified.
    */
-  private ResponseEntity<Void> checkUserVerified(Principal principal) {
-    String email = principal.getName();
+  private Boolean checkUserVerified(String email) {
     Optional<User> user = userService.getUserByEmail(email);
 
     if (user.isEmpty()) {
       LOGGER.warning("User not found: " + email);
-      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    boolean isVerified = verificationService.getVerificationTokenByUserId(user.get().getUserId().toString())
+    return verificationService.getVerificationTokenByUserId(user.get().getUserId())
       .map(token -> token.getVerificationFlag() != null && token.getVerificationFlag())
-      .orElse(false);
-
-    if (!isVerified) {
-      LOGGER.warning("User is not verified: " + email);
-      return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-    }
-    return null; // User is verified
+      .orElse(false); // User is verified
   }
 
   /**
    * Handles the POST request to create a new user.
    *
-   * @param userCreateDTO DTO containing information required to create a new
-   *                      user.
-   * @return ResponseEntity containing the created UserResponseDTO and HTTP
-   * status.
+   * @param requestBodyMap Map containing the fields required to create a new user.
+   * @param request        The HTTP request object.
+   * @return ResponseEntity containing the created UserResponseDTO and HTTP status.
+   * Includes validation for query parameters, request body structure,
+   * and email/password format. Publishes an SNS message upon successful creation.
    */
   @PostMapping
   public ResponseEntity<UserResponseDTO> createUser(@RequestBody Map<String, Object> requestBodyMap,
@@ -147,10 +142,17 @@ public class UserController {
     // Prepare the response DTO with the created user details.
     Optional<User> justAddedUser = ControllerUtils.getExsistingUser(userService, email);
     if (justAddedUser.isPresent()) {
+      VerificationToken newToken = verificationService.createVerificationToken(justAddedUser.get().getUserId(), justAddedUser.get().getEmailAddress());
       UserResponseDTO userResponseDTO = ControllerUtils
               .setResponseObject(justAddedUser);
+
+      Optional<VerificationToken> justAddedToken = verificationService.getVerificationTokenByUserId(justAddedUser.get().getUserId());
       // Publish message to SNS topic
-      messagePubService.publishMessage(userResponseDTO.getFirst_name(), userResponseDTO.getId().toString());
+      justAddedToken.ifPresent(verificationToken -> messagePubService.publishMessage(justAddedUser.get().getEmailAddress(),
+                                                                                      justAddedUser.get().getFirstName(),
+                                                                                      justAddedUser.get().getUserId().toString(),
+                                                                                      verificationToken.getToken().toString()));
+
       // Log successful user creation and return the response.
       LOGGER.info("User created successfully: " + userResponseDTO);
 
@@ -175,6 +177,7 @@ public class UserController {
    * @param request   The HTTP request object.
    * @param principal Security principal object containing user credentials.
    * @return ResponseEntity containing the UserResponseDTO and HTTP status.
+   * Validates query parameters and ensures the user is verified before retrieving details.
    */
   @GetMapping("/self")
   public ResponseEntity<UserResponseDTO> getUserInfo(HttpServletRequest request, Principal principal) {
@@ -197,16 +200,19 @@ public class UserController {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
-    // Check if the user is verified
-    ResponseEntity<Void> verificationCheck = checkUserVerified(principal);
-    if (verificationCheck != null) {
-      return new ResponseEntity<>(verificationCheck.getStatusCode());
-    }
-
     String email = principal.getName();
 
     // Check if the authenticated user exists in the system.
     if (ControllerUtils.checkUserExists(userService, email)) {
+
+      // Check if the user is verified
+      if (!checkUserVerified(email)) {
+        LOGGER.warning("User is not verified: " + email);
+        long elapsedTime = System.currentTimeMillis() - startTime;
+        statsDClient.recordExecutionTime("api.v1.user.getUserInfo.response_time", elapsedTime);
+        return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+      }
+      LOGGER.info("User is verified: " + email);
 
       Optional<User> existingUser = ControllerUtils.getExsistingUser(userService, email);
       UserResponseDTO userResponseDTO = ControllerUtils.setResponseObject(existingUser);
@@ -230,12 +236,13 @@ public class UserController {
   }
 
   /**
-   * Handles the PUT request to update information of the currently authenticated
-   * user.
+   * Handles the PUT request to update information of the currently authenticated user.
    *
    * @param principal     Security principal object containing user credentials.
-   * @param userUpdateDTO DTO containing updated user information.
+   * @param requestBodyMap Map containing fields to be updated for the user.
+   * @param request        The HTTP request object.
    * @return ResponseEntity with HTTP status.
+   * Ensures only allowed fields are updated and validates user verification status.
    */
   @PutMapping("/self")
   public ResponseEntity<UserResponseDTO> updateUser(Principal principal,
@@ -260,12 +267,6 @@ public class UserController {
       return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
-    // Check if the user is verified
-    ResponseEntity<Void> verificationCheck = checkUserVerified(principal);
-    if (verificationCheck != null) {
-      return new ResponseEntity<>(verificationCheck.getStatusCode());
-    }
-
     String email = principal.getName();
 
     // Check if the authenticated user exists in the system.
@@ -277,6 +278,15 @@ public class UserController {
 
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
+
+    // Check if the user is verified
+    if (!checkUserVerified(email)) {
+      LOGGER.warning("User is not verified: " + email);
+      long elapsedTime = System.currentTimeMillis() - startTime;
+      statsDClient.recordExecutionTime("api.v1.user.getUserInfo.response_time", elapsedTime);
+      return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+    }
+    LOGGER.info("User is verified: " + email);
 
     // Define the allowed fields for the update
     Set<String> allowedFields = Set.of("password", "firstName", "lastName");
@@ -310,10 +320,10 @@ public class UserController {
   }
 
   /**
-   * Handles unsupported HTTP methods (DELETE, PATCH, OPTIONS, HEAD) on the /self
-   * endpoint.
+   * Handles unsupported HTTP methods (DELETE, PATCH, OPTIONS, HEAD) on the /self endpoint.
    *
    * @return ResponseEntity with 405 Method Not Allowed and appropriate headers.
+   * Includes metrics tracking for unsupported method attempts.
    */
   @RequestMapping(value = "/self", method = {
           RequestMethod.DELETE,

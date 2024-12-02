@@ -11,14 +11,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AWSSnsConfig {
 
+  @Value("${cloud.aws.region.static}")
+  private String region;
+
   @Value("${cloud.aws.credentials.access-key}")
   private String awsAccessKey;
 
   @Value("${cloud.aws.credentials.secret-key}")
   private String awsSecretKey;
-
-  @Value("${cloud.aws.region.static}")
-  private String region;
 
   @Bean
   public SnsClient snsClient() {

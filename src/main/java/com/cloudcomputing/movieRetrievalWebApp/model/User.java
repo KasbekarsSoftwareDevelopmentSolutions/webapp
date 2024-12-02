@@ -45,9 +45,7 @@ public class User {
     this.accountUpdated = LocalDateTime.now();
   }
 
-  public UUID getUserId() {
-    return userId;
-  }
+  public UUID getUserId() { return userId; }
 
   public void setUserId(UUID userId) {
     this.userId = userId;
