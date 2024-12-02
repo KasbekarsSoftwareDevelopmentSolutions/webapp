@@ -15,8 +15,9 @@ public class MessagePubService {
 
   private final SnsClient snsClient;
 
-  @Value("${cloud.aws.sns.topic-name}")
-  private String snsTopicName;
+  // Update this to use the correct property
+  @Value("${cloud.aws.sns.topic-arn}")
+  private String snsTopicArn;
 
   @Autowired
   public MessagePubService(SnsClient snsClient) {
@@ -26,23 +27,27 @@ public class MessagePubService {
   /**
    * Publishes a message to the configured SNS topic.
    *
-   * @param username The username of the user.
-   * @param userId   The userId of the user.
+   * @param userEmailAddress The email address of the user.
+   * @param userFirstName The first name of the user.
+   * @param userId The ID of the user.
+   * @param token The verification token.
    */
-  public void publishMessage(String username, String userId) {
+  public void publishMessage(String userEmailAddress, String userFirstName, String userId, String token) {
     try {
       // Create the JSON payload
       Map<String, String> messagePayload = new HashMap<>();
-      messagePayload.put("username", username);
+      messagePayload.put("userEmailAddress", userEmailAddress);
+      messagePayload.put("userFirstName", userFirstName);
       messagePayload.put("userId", userId);
+      messagePayload.put("token", token);
 
       // Convert payload to JSON
       ObjectMapper objectMapper = new ObjectMapper();
       String jsonMessage = objectMapper.writeValueAsString(messagePayload);
 
-      // Publish the message
+      // Publish the message to the SNS topic using the ARN
       PublishRequest request = PublishRequest.builder()
-        .topicArn(snsTopicName)
+        .topicArn(snsTopicArn)  // Use the ARN directly from the properties
         .message(jsonMessage)
         .build();
 

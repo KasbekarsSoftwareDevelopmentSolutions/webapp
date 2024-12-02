@@ -7,8 +7,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
 import java.util.logging.Logger;
 
+/**
+ * VerificationController handles API requests related to user verification.
+ *
+ * It provides endpoints to verify tokens and handle unsupported HTTP methods
+ * gracefully for the verification process. The controller integrates with
+ * the VerificationService to validate tokens and uses StatsDClient for
+ * performance metrics and logging.
+ */
 @RestController
 @RequestMapping("/v1/user")
 public class VerificationController {
@@ -26,10 +35,16 @@ public class VerificationController {
   }
 
   /**
-   * GET endpoint to verify a token.
+   * GET endpoint to verify a provided token.
    *
-   * @param token The token to verify, passed as a query parameter.
-   * @return ResponseEntity with status OK if verified, or BAD_REQUEST otherwise.
+   * This endpoint accepts a token as a query parameter, validates it through
+   * the VerificationService, and returns an appropriate response. It also
+   * logs the request details and captures metrics for monitoring purposes.
+   *
+   * @param token The token to be verified, provided as a query parameter.
+   * @return ResponseEntity with:
+   *         - HTTP 200 (OK) if the token is successfully verified.
+   *         - HTTP 400 (BAD_REQUEST) if the token is invalid, expired, or missing.
    */
   @GetMapping("/verify")
   public ResponseEntity<String> verifyToken(@RequestParam("token") String token) {
@@ -43,7 +58,12 @@ public class VerificationController {
       return new ResponseEntity<>("Token is missing or invalid.", HttpStatus.BAD_REQUEST);
     }
 
-    boolean isVerified = verificationService.verifyToken(token);
+    if(verificationService.isTokenAlreadyVerified(UUID.fromString(token))) {
+      LOGGER.warning("Token already verified.");
+      return new ResponseEntity<>("Token already verified.", HttpStatus.BAD_REQUEST);
+    }
+
+    boolean isVerified = verificationService.verifyToken(UUID.fromString(token));
 
     if (isVerified) {
       LOGGER.info("Token verified successfully.");
@@ -57,9 +77,13 @@ public class VerificationController {
   }
 
   /**
-   * Handle all unsupported HTTP methods (POST, PUT, DELETE, etc.) on /verify.
+   * Handles unsupported HTTP methods on the /verify endpoint.
    *
-   * @return ResponseEntity with status BAD_REQUEST.
+   * This method catches all unsupported HTTP methods such as POST, PUT, DELETE,
+   * and others, providing a consistent response with HTTP 400 (BAD_REQUEST).
+   * It logs the attempt and increments a metric counter.
+   *
+   * @return ResponseEntity with HTTP 400 (BAD_REQUEST) and a descriptive message.
    */
   @RequestMapping(value = "/verify", method = {
     RequestMethod.POST,

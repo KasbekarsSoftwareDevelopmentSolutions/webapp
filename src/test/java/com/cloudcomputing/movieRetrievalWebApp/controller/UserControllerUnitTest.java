@@ -1,5 +1,6 @@
 package com.cloudcomputing.movieRetrievalWebApp.controller;
 
+import com.cloudcomputing.movieRetrievalWebApp.service.VerificationService;
 import com.timgroup.statsd.StatsDClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,9 @@ class UserControllerUnitTest {
 
   @Mock
   private StatsDClient statsDClient;
+
+  @Mock
+  private VerificationService verificationService;
 
   @InjectMocks
   private UserController userController;
