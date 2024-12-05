@@ -84,11 +84,6 @@ jobs:
           echo "spring.datasource.username=${{ secrets.DB_USERNAME }}" >> src/main/resources/application.properties
           echo "spring.datasource.password=${{ secrets.DB_USER_PASSWORD }}" >> src/main/resources/application.properties
           echo "spring.datasource.driver-class-name=${{ vars.SPRING_DATASOURCE_DRIVER_CLASS_NAME }}" >> src/main/resources/application.properties
-          echo "spring.datasource.hikari.minimum-idle=${{ vars.SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE }}" >> src/main/resources/application.properties
-          echo "spring.datasource.hikari.maximum-pool-size=${{ vars.SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE }}" >> src/main/resources/application.properties
-          echo "spring.datasource.hikari.idle-timeout=${{ vars.SPRING_DATASOURCE_HIKARI_IDEL_TIMEOUT }}" >> src/main/resources/application.properties
-          echo "spring.datasource.hikari.connection-timeout=${{ vars.SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT }}" >> src/main/resources/application.properties
-          echo "spring.datasource.hikari.max-lifetime=${{ vars.SPRING_DATASOURCE_HIKARI_MAX_LIFETIME }}" >> src/main/resources/application.properties
           echo "spring.jpa.hibernate.ddl-auto=${{ vars.SPRING_JPA_HIBERNATE_DDL_AUTO }}" >> src/main/resources/application.properties
           echo "spring.jpa.show-sql=${{ vars.SPRING_JPA_SHOW_SQL }}" >> src/main/resources/application.properties
           echo "cloud.aws.region.static=${{ vars.AWS_DEFAULT_REGION }}" >> src/main/resources/application.properties
