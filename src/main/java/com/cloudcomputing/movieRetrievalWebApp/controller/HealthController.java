@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 @RestController
-@RequestMapping("/healthz,/cicd")
+@RequestMapping("/healthz,/cicdz")
 public class HealthController {
   private static final Logger LOGGER = Logger.getLogger(HealthController.class.getName());
 
