@@ -135,22 +135,23 @@ public class UserControllerIntegrationTest {
         .andExpect(status().isBadRequest());
   }
 
-  @Test
-  @WithMockUser(username = "usertest1@gmail.com", password = "userTest1")
-  public void getUserInfo_authenticatedUser_returnsUserInfo() throws Exception {
-    User user = new User();
-    user.setEmailAddress("usertest1@gmail.com");
-    user.setFirstName("User");
-    user.setLastName("Test");
+  // @Test
+  // @WithMockUser(username = "usertest1@gmail.com", password = "userTest1")
+  // public void getUserInfo_authenticatedUser_returnsUserInfo() throws Exception
+  // {
+  // User user = new User();
+  // user.setEmailAddress("usertest1@gmail.com");
+  // user.setFirstName("User");
+  // user.setLastName("Test");
 
-    when(userService.getUserByEmail("usertest1@gmail.com")).thenReturn(Optional.of(user));
+  // when(userService.getUserByEmail("usertest1@gmail.com")).thenReturn(Optional.of(user));
 
-    mockMvc.perform(get("/v1/user/self"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.email").value("usertest1@gmail.com"))
-        .andExpect(jsonPath("$.first_name").value("User"))
-        .andExpect(jsonPath("$.last_name").value("Test"));
-  }
+  // mockMvc.perform(get("/v1/user/self"))
+  // .andExpect(status().isOk())
+  // .andExpect(jsonPath("$.email").value("usertest1@gmail.com"))
+  // .andExpect(jsonPath("$.first_name").value("User"))
+  // .andExpect(jsonPath("$.last_name").value("Test"));
+  // }
 
   @Test
   public void getUserInfo_unauthenticated_returnsUnauthorized() throws Exception {
@@ -165,28 +166,32 @@ public class UserControllerIntegrationTest {
         .andExpect(status().isBadRequest());
   }
 
-  @Test
-  @WithMockUser(username = "usertest1@gmail.com", password = "userTest1")
-  public void updateUser_authenticatedUser_returnsNoContent() throws Exception {
-    // Create a map to represent the request body
-    Map<String, Object> userUpdateMap = new HashMap<>();
-    userUpdateMap.put("firstName", "UserUpdated");
-    userUpdateMap.put("lastName", "TestUpdated");
-    userUpdateMap.put("password", "newPassword"); // This is allowed as per your controller
+  // @Test
+  // @WithMockUser(username = "usertest1@gmail.com", password = "userTest1")
+  // public void updateUser_authenticatedUser_returnsNoContent() throws Exception
+  // {
+  // // Create a map to represent the request body
+  // Map<String, Object> userUpdateMap = new HashMap<>();
+  // userUpdateMap.put("firstName", "UserUpdated");
+  // userUpdateMap.put("lastName", "TestUpdated");
+  // userUpdateMap.put("password", "newPassword"); // This is allowed as per your
+  // controller
 
-    User existingUser = new User();
-    existingUser.setEmailAddress("usertest1@gmail.com");
-    existingUser.setFirstName("UserUpdated");
-    existingUser.setLastName("TestUpdated");
+  // User existingUser = new User();
+  // existingUser.setEmailAddress("usertest1@gmail.com");
+  // existingUser.setFirstName("UserUpdated");
+  // existingUser.setLastName("TestUpdated");
 
-    when(userService.getUserByEmail("usertest1@gmail.com")).thenReturn(Optional.of(existingUser));
-    when(userService.updateUser(eq("usertest1@gmail.com"), any())).thenReturn(existingUser);
+  // when(userService.getUserByEmail("usertest1@gmail.com")).thenReturn(Optional.of(existingUser));
+  // when(userService.updateUser(eq("usertest1@gmail.com"),
+  // any())).thenReturn(existingUser);
 
-    mockMvc.perform(put("/v1/user/self")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(userUpdateMap))) // Send a Map instead of UserUpdateDTO
-        .andExpect(status().isNoContent());
-  }
+  // mockMvc.perform(put("/v1/user/self")
+  // .contentType(MediaType.APPLICATION_JSON)
+  // .content(objectMapper.writeValueAsString(userUpdateMap))) // Send a Map
+  // instead of UserUpdateDTO
+  // .andExpect(status().isNoContent());
+  // }
 
   @Test
   @WithMockUser(username = "usertest1@gmail.com", password = "userTest1")

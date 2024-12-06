@@ -18,9 +18,8 @@
 
 name: Building AMI
 on:
-  pull_request:
-    branches: [ main ]
-    types: [ closed ]
+  push:
+    branches: [a9.0]
 
 #  Allows you to run this workflow manually from the Actions tab
 #  workflow_dispatch:
@@ -30,7 +29,6 @@ env:
 
 jobs:
   build_AMI:
-    if: github.event.pull_request.merged == true
     name: Building AMI
     runs-on: ubuntu-latest
 
@@ -157,26 +155,26 @@ jobs:
             --query "Images | sort_by(@, &CreationDate)[-1].ImageId" \
             --output text)
           echo "Latest AMI ID: $AMI_ID"
-          
+
           # Fetch the Launch Template ID dynamically based on its name
           LAUNCH_TEMPLATE_NAME=${{ secrets.LAUNCH_TEMPLATE_NAME }}
           LAUNCH_TEMPLATE_ID=$(aws ec2 describe-launch-templates \
             --filters "Name=launch-template-name,Values=$LAUNCH_TEMPLATE_NAME" \
             --query "LaunchTemplates[0].LaunchTemplateId" --output text)
           echo "Launch Template ID: $LAUNCH_TEMPLATE_ID"
-          
+
           # Create a new version of the launch template with the latest AMI ID
           aws ec2 create-launch-template-version \
             --launch-template-id $LAUNCH_TEMPLATE_ID \
             --version-description "Updated AMI version" \
             --launch-template-data '{"ImageId":"'$AMI_ID'"}'
-    
+
           # Output the new launch template version
           NEW_VERSION=$(aws ec2 describe-launch-templates \
             --launch-template-ids $LAUNCH_TEMPLATE_ID \
             --query "LaunchTemplates[0].LatestVersionNumber" --output text)
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          
+
       - name: Trigger Instance Refresh
         id: trigger_instance_refresh
         run: |
@@ -185,10 +183,10 @@ jobs:
             --auto-scaling-group-name ${{ secrets.AUTOSCALING_GROUP_NAME }} \
             --preferences '{"MinHealthyPercentage": 90, "InstanceWarmup": 300}' \
             --query "InstanceRefreshId" --output text)
-          
+
           echo "Instance Refresh ID: $REFRESH_ID"
           echo "REFRESH_ID=$REFRESH_ID" >> $GITHUB_ENV
-          
+
       - name: Wait for Instance Refresh
         id: wait_for_instance_refresh
         run: |
