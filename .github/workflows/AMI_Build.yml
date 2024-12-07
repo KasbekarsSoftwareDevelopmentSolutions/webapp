@@ -22,7 +22,7 @@ on:
   #   branches: [ main ]
   #   types: [ closed ]
   push:
-    branches: [review_a8]
+    branches: [a9.1]
 
 #  Allows you to run this workflow manually from the Actions tab
 #  workflow_dispatch:
@@ -78,7 +78,6 @@ jobs:
 
       - name: Set up Application Properties for Tests
         run: |
-          run: |
           echo "spring.datasource.url=${{ secrets.SPRING_DATASOURCE_URL }}" >> src/main/resources/application.properties
           echo "spring.datasource.username=${{ secrets.DB_USERNAME }}" >> src/main/resources/application.properties
           echo "spring.datasource.password=${{ secrets.DB_USER_PASSWORD }}" >> src/main/resources/application.properties
@@ -121,7 +120,7 @@ jobs:
 
       # Assume the IAM role using AWS CLI
       - name: Assume IAM Role
-        id: assume_role
+        id: assume_role_1
         run: |
           ROLE_ARN=${{ secrets.AWS_ROLE_ARN }}
           SESSION_NAME="GitHubActionsSession"
@@ -158,6 +157,7 @@ jobs:
 
       # Assume IAM Role in Account 2
       - name: Assume IAM Role in Account 2
+        id: assume_role_2
         run: |
           ROLE_ARN=${{ secrets.AWS_ROLE_ARN_DEMO }}
           SESSION_NAME="GitHubActionsSession"
