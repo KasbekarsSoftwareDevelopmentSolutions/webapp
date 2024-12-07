@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 @RestController
-@RequestMapping("/healthz")
+@RequestMapping("/healthz,/cicdz")
 public class HealthController {
   private static final Logger LOGGER = Logger.getLogger(HealthController.class.getName());
 
@@ -37,12 +37,12 @@ public class HealthController {
 
     if (request.getContentLength() > 0 || !queryParams.isEmpty()) {
       LOGGER.warning("Invalid request: Content length is greater than zero or query parameters are present."
-              + " ##HttpStatus.BAD_REQUEST sent in response## ");
+          + " ##HttpStatus.BAD_REQUEST sent in response## ");
       return ResponseEntity.badRequest()
-              .header("Cache-Control", "no-cache", "no-store", "must-revalidate")
-              .header("Pragma", "no-cache")
-              .header("X-Content-Type-Options", "no-sniff")
-              .build();
+          .header("Cache-Control", "no-cache", "no-store", "must-revalidate")
+          .header("Pragma", "no-cache")
+          .header("X-Content-Type-Options", "no-sniff")
+          .build();
     }
 
     try {
@@ -54,10 +54,10 @@ public class HealthController {
       statsDClient.recordExecutionTime("api.healthz.get.response_time", elapsedTime);
 
       return ResponseEntity.ok()
-              .header("Cache-Control", "no-cache", "no-store", "must-revalidate")
-              .header("Pragma", "no-cache")
-              .header("X-Content-Type-Options", "no-sniff")
-              .build();
+          .header("Cache-Control", "no-cache", "no-store", "must-revalidate")
+          .header("Pragma", "no-cache")
+          .header("X-Content-Type-Options", "no-sniff")
+          .build();
     } catch (DataAccessException e) {
       LOGGER.severe("Database connectivity check failed: " + e.getMessage());
 
@@ -65,10 +65,10 @@ public class HealthController {
       statsDClient.recordExecutionTime("api.healthz.get.response_time", elapsedTime);
 
       return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-              .header("Cache-Control", "no-cache", "no-store", "must-revalidate")
-              .header("Pragma", "no-cache")
-              .header("X-Content-Type-Options", "no-sniff")
-              .build();
+          .header("Cache-Control", "no-cache", "no-store", "must-revalidate")
+          .header("Pragma", "no-cache")
+          .header("X-Content-Type-Options", "no-sniff")
+          .build();
     }
   }
 
@@ -79,9 +79,9 @@ public class HealthController {
     LOGGER.warning("Unsupported HTTP method attempted on /healthz endpoint.");
 
     return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-            .header("Cache-Control", "no-cache", "no-store", "must-revalidate")
-            .header("Pragma", "no-cache")
-            .header("X-Content-Type-Options", "no-sniff")
-            .build();
+        .header("Cache-Control", "no-cache", "no-store", "must-revalidate")
+        .header("Pragma", "no-cache")
+        .header("X-Content-Type-Options", "no-sniff")
+        .build();
   }
 }
