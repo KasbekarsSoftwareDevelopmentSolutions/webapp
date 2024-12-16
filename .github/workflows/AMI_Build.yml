@@ -18,11 +18,11 @@
 
 name: Building AMI
 on:
-  # pull_request:
-  #   branches: [ main ]
-  #   types: [ closed ]
-  push:
-    branches: [a9.1]
+  pull_request:
+    branches: [main]
+    types: [closed]
+  # push:
+  #   branches: [ testing_a8.0 ]
 
 #  Allows you to run this workflow manually from the Actions tab
 #  workflow_dispatch:
@@ -32,6 +32,7 @@ env:
 
 jobs:
   build_AMI:
+    #    if: github.event.pull_request.merged == true
     name: Building AMI
     runs-on: ubuntu-latest
 
@@ -179,17 +180,18 @@ jobs:
           AMI_ID=$(aws ec2 describe-images --owners self --filters "Name=tag:Name,Values=CloudNativeApp_*" --query "Images | sort_by(@, &CreationDate)[-1].ImageId" --output text)
           echo "Latest AMI ID: $AMI_ID"
 
-          # Fetch the Launch Template ID and Latest Version using the Launch Template Name
-          LAUNCH_TEMPLATE_NAME="csye6225_asg"
-          LAUNCH_TEMPLATE_ID=$(aws ec2 describe-launch-templates --filters "Name=launch-template-name,Values=$LAUNCH_TEMPLATE_NAME" --query "LaunchTemplates[0].LaunchTemplateId" --output text)
-          LAUNCH_TEMPLATE_VERSION=$(aws ec2 describe-launch-templates --filters "Name=launch-template-name,Values=$LAUNCH_TEMPLATE_NAME" --query "LaunchTemplates[0].LatestVersionNumber" --output text)
+          # Fetch the Launch Template ID dynamically based on its name
+          LAUNCH_TEMPLATE_NAME=${{ secrets.LAUNCH_TEMPLATE_NAME }}
+          LAUNCH_TEMPLATE_ID=$(aws ec2 describe-launch-templates \
+            --filters "Name=launch-template-name,Values=$LAUNCH_TEMPLATE_NAME" \
+            --query "LaunchTemplates[0].LaunchTemplateId" --output text)
+          echo "Launch Template ID: $LAUNCH_TEMPLATE_ID"
 
           # Create a new version of the launch template with the latest AMI ID
           aws ec2 create-launch-template-version \
-          --launch-template-id $LAUNCH_TEMPLATE_ID \
-          --source-version $LAUNCH_TEMPLATE_VERSION \
-          --version-description "Updated AMI version" \
-          --launch-template-data '{"ImageId":"'$AMI_ID'"}'
+            --launch-template-id $LAUNCH_TEMPLATE_ID \
+            --version-description "Updated AMI version" \
+            --launch-template-data '{"ImageId":"'$AMI_ID'"}'
 
           # Output the new launch template version
           NEW_VERSION=$(aws ec2 describe-launch-templates \

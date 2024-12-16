@@ -122,3 +122,4 @@ temp/
 # Excluding Important Files
 applicationproperties.txt
 applicationtestproperties.txt
+/src/main/resources/aaplicationproperties.txt
