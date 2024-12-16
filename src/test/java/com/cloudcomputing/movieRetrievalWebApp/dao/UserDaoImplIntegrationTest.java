@@ -46,22 +46,22 @@ public class UserDaoImplIntegrationTest {
     sampleUser.setLastName("Doe");
   }
 
-//  @Test
-//  public void testGetAllUsers() {
-//    // Arrange
-//    when(userRepo.findAll()).thenReturn(Collections.singletonList(sampleUser));
-//
-//    // Act
-//    var users = userDAOImpl.getAllUsers();
-//
-//    // Assert
-//    assertNotNull(users);
-//    assertEquals(1, users.size());
-//    assertEquals("john.doe@example.com", users.get(0).getEmailAddress());
-//
-//    // Verify that the method was called once
-//    verify(userRepo, times(1)).findAll();
-//  }
+  // @Test
+  // public void testGetAllUsers() {
+  // // Arrange
+  // when(userRepo.findAll()).thenReturn(Collections.singletonList(sampleUser));
+
+  // // Act
+  // var users = userDAOImpl.getAllUsers();
+
+  // // Assert
+  // assertNotNull(users);
+  // assertEquals(1, users.size());
+  // assertEquals("john.doe@example.com", users.get(0).getEmailAddress());
+
+  // // Verify that the method was called once
+  // verify(userRepo, times(3)).findAll();
+  // }
 
   @Test
   public void testCreateUser_userDoesNotExist() {
