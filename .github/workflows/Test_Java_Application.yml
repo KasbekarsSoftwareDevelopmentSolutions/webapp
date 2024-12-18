@@ -94,3 +94,6 @@ jobs:
 
       - name: Run Test Cases
         run: mvn test --file pom.xml
+
+      - name: Run Build Application
+        run: mvn clean install --file pom.xml
