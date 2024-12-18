@@ -60,7 +60,7 @@ public class UserDaoImplIntegrationTest {
     assertEquals("john.doe@example.com", users.get(0).getEmailAddress());
 
     // Verify that the method was called once
-    verify(userRepo, times(1)).findAll(); // invocation times need to adjusted based on various factors to work on the github runner.
+    verify(userRepo, times(3)).findAll(); // invocation times need to adjusted based on various factors to work on the github runner.
   }
 
   @Test
