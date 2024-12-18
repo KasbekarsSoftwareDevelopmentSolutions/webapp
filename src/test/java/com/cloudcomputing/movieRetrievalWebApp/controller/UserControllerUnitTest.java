@@ -1,5 +1,6 @@
 package com.cloudcomputing.movieRetrievalWebApp.controller;
 
+import com.cloudcomputing.movieRetrievalWebApp.model.VerificationToken;
 import com.cloudcomputing.movieRetrievalWebApp.service.VerificationService;
 import com.timgroup.statsd.StatsDClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -97,35 +98,41 @@ class UserControllerUnitTest {
     }
   }
 
-  // @Test
-  // void getUserInfo_Success() {
-  // Principal principal = () -> "test@example.com";
-  // MockHttpServletRequest request = new MockHttpServletRequest();
+  @Test
+  void getUserInfo_Success() {
+    Principal principal = () -> "test@example.com";
+    MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 
-  // User user = new User();
-  // user.setEmailAddress("test@example.com");
-  // user.setFirstName("John");
-  // user.setLastName("Doe");
+    User mockUser = new User();
+    mockUser.setEmailAddress("test@example.com");
+    mockUser.setFirstName("John");
+    mockUser.setLastName("Doe");
 
-  // try (MockedStatic<ControllerUtils> mockedControllerUtils =
-  // mockStatic(ControllerUtils.class)) {
-  // mockedControllerUtils.when(() -> ControllerUtils.checkUserExists(userService,
-  // "test@example.com"))
-  // .thenReturn(true);
-  // mockedControllerUtils.when(() ->
-  // ControllerUtils.getExsistingUser(userService, "test@example.com"))
-  // .thenReturn(Optional.of(user));
-  // mockedControllerUtils.when(() ->
-  // ControllerUtils.setResponseObject(any(Optional.class)))
-  // .thenReturn(new UserResponseDTO());
+    VerificationToken token = new VerificationToken();
+    token.setVerificationFlag(true);
 
-  // ResponseEntity<UserResponseDTO> response =
-  // userController.getUserInfo(request, principal);
+    try (MockedStatic<ControllerUtils> mockedControllerUtils = mockStatic(ControllerUtils.class)) {
+      mockedControllerUtils.when(() -> ControllerUtils.checkUserExists(userService, "test@example.com"))
+        .thenReturn(true);
+      mockedControllerUtils.when(() -> ControllerUtils.getExsistingUser(userService, "test@example.com"))
+        .thenReturn(Optional.of(mockUser));
+      mockedControllerUtils.when(() -> ControllerUtils.setResponseObject(any(Optional.class)))
+        .thenReturn(new UserResponseDTO());
 
-  // assertEquals(HttpStatus.OK, response.getStatusCode());
-  // assertNotNull(response.getBody());
-  // }
-  // }
+      // Mock userService to return the user
+      when(userService.getUserByEmail("test@example.com"))
+        .thenReturn(Optional.of(mockUser));
+
+      // Mock verificationService to return a verified token
+      when(verificationService.getVerificationTokenByUserId(mockUser.getUserId()))
+        .thenReturn(Optional.of(token));
+
+      ResponseEntity<UserResponseDTO> response = userController.getUserInfo(mockRequest, principal);
+
+      assertEquals(HttpStatus.OK, response.getStatusCode());
+      assertNotNull(response.getBody());
+    }
+  }
 
   @Test
   void getUserInfo_UserNotFound() {
@@ -142,35 +149,42 @@ class UserControllerUnitTest {
     }
   }
 
-  // @Test
-  // void updateUser_Success() {
-  // Principal principal = () -> "test@example.com";
-  // Map<String, Object> requestBody = new HashMap<>();
-  // requestBody.put("firstName", "UpdatedJohn");
-  // requestBody.put("lastName", "UpdatedDoe");
+  @Test
+  void updateUser_Success() {
+    Principal principal = () -> "test@example.com";
+    Map<String, Object> mockRequestBody = new HashMap<>();
+    mockRequestBody.put("firstName", "UpdatedJohn");
+    mockRequestBody.put("lastName", "UpdatedDoe");
 
-  // MockHttpServletRequest request = new MockHttpServletRequest();
+    MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 
-  // User existingUser = new User();
-  // existingUser.setEmailAddress("test@example.com");
+    User mockExistingUser = new User();
+    mockExistingUser.setEmailAddress("test@example.com");
 
-  // try (MockedStatic<ControllerUtils> mockedControllerUtils =
-  // mockStatic(ControllerUtils.class)) {
-  // mockedControllerUtils.when(() -> ControllerUtils.checkUserExists(userService,
-  // "test@example.com"))
-  // .thenReturn(true);
-  // mockedControllerUtils
-  // .when(() -> ControllerUtils.updateUser(eq(userService),
-  // any(UserUpdateDTO.class), eq("test@example.com")))
-  // .thenReturn(existingUser);
+    VerificationToken mockVerificationToken = new VerificationToken();
+    mockVerificationToken.setVerificationFlag(true);
 
-  // ResponseEntity<UserResponseDTO> response =
-  // userController.updateUser(principal, requestBody, request);
+    try (MockedStatic<ControllerUtils> mockedControllerUtils = mockStatic(ControllerUtils.class)) {
+      mockedControllerUtils.when(() -> ControllerUtils.checkUserExists(userService, "test@example.com"))
+        .thenReturn(true);
+      mockedControllerUtils.when(() -> ControllerUtils.updateUser(eq(userService),
+          any(UserUpdateDTO.class), eq("test@example.com")))
+        .thenReturn(mockExistingUser);
 
-  // assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-  // verify(userService).updateUser(eq("test@example.com"), any(User.class));
-  // }
-  // }
+      // Mock `userService.getUserByEmail` to return the user
+      when(userService.getUserByEmail("test@example.com"))
+        .thenReturn(Optional.of(mockExistingUser));
+
+      // Mock `verificationService.getVerificationTokenByUserId` to return a verified token
+      when(verificationService.getVerificationTokenByUserId(mockExistingUser.getUserId()))
+        .thenReturn(Optional.of(mockVerificationToken));
+
+      ResponseEntity<UserResponseDTO> response = userController.updateUser(principal, mockRequestBody, mockRequest);
+
+      assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+      verify(userService).updateUser(eq("test@example.com"), any(User.class));
+    }
+  }
 
   @Test
   void updateUser_UserNotFound() {

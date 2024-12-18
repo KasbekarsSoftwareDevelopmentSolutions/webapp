@@ -14,7 +14,7 @@
 name: Java CI Building with Maven
 
 on:
-  pull_request:
+  pull_request_target:
     branches: [ main ]
 
 #  Allows you to run this workflow manually from the Actions tab
@@ -77,6 +77,7 @@ jobs:
           echo "spring.jpa.show-sql=${{ vars.SPRING_JPA_SHOW_SQL }}" >> src/main/resources/application.properties
           echo "cloud.aws.region.static=${{ vars.AWS_DEFAULT_REGION }}" >> src/main/resources/application.properties
           echo "cloud.aws.s3.bucket-name=${{ secrets.CLOUD_AWS_S3_BUCKET_NAME }}" >> src/main/resources/application.properties
+          echo "cloud.aws.sns.topic-name=${{ secrets.CLOUD_AWS_SNS_TOPIC_NAME }}" >> src/main/resources/application.properties
           echo "cloud.aws.credentials.access-key=${{ secrets.AWS_ACCESS_KEY_ID }}" >> src/main/resources/application.properties
           echo "cloud.aws.credentials.secret-key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> src/main/resources/application.properties
           echo "spring.servlet.multipart.enabled=${{ vars.SPRING_SERVLET_MULTIPART_ENABLED }}" >> src/main/resources/application.properties
