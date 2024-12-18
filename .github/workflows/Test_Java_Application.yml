@@ -21,7 +21,7 @@
 name: Test Java Application
 
 on:
-  pull_request_target:
+  pull_request:
     branches: [ main ]
 
 #  Allows you to run this workflow manually from the Actions tab
@@ -44,16 +44,24 @@ jobs:
           MYSQL_PASSWORD: ${{ secrets.DB_USER_PASSWORD }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout feature branch code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Wait for MySQL to start
         run: |
-          until mysqladmin ping -h "127.0.0.1" --silent; do
+          timeout=60
+          while ! mysqladmin ping -h "127.0.0.1" --silent; do
             echo "Waiting for MySQL..."
             sleep 5
+            timeout=$((timeout - 5))
+            if [ $timeout -le 0 ]; then
+              echo "MySQL did not start within the expected time."
+              exit 1
+            fi
           done
-        shell: bash
+          shell: bash
 
       - name: Test MySQL Connectivity
         run: |
@@ -65,13 +73,6 @@ jobs:
           website: oracle.com
           release: 21
           version: 21.0.1
-
-      - name: Cache Maven packages
-        uses: actions/cache@v1
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
 
       - name: Set up Application Properties for Tests
         run: |
