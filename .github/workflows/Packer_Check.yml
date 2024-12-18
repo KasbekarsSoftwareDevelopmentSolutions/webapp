@@ -16,7 +16,7 @@
 name: Packer Check
 
 on:
-  pull_request_target:
+  pull_request:
     branches: [ main ]
 
 #  Allows you to run this workflow manually from the Actions tab
