@@ -38,18 +38,18 @@ class HealthControllerUnitTest {
 
   @Test
   void testHealthCheck_Success() {
-    // Simulate a successful database query
-    doNothing().when(jdbcTemplate).execute("SELECT 1"); // Change this to doNothing for void method
+
+    doNothing().when(jdbcTemplate).execute("SELECT 1");
 
     ResponseEntity<Void> response = healthController.healthCheck(request);
 
     verify(statsDClient).incrementCounter("api.healthz.get.count");
-    assertEquals(200, response.getStatusCodeValue()); // Check for OK status
+    assertEquals(200, response.getStatusCodeValue());
   }
 
   @Test
   void testHealthCheck_BadRequest_ContentLength() {
-    // Simulate request with content length greater than zero
+
     when(request.getContentLength()).thenReturn(1);
 
     ResponseEntity<Void> response = healthController.healthCheck(request);
@@ -59,7 +59,7 @@ class HealthControllerUnitTest {
 
   @Test
   void testHealthCheck_BadRequest_QueryParameters() {
-    // Simulate request with query parameters
+
     when(request.getParameterMap()).thenReturn(Map.of("param", new String[] { "value" }));
 
     ResponseEntity<Void> response = healthController.healthCheck(request);
@@ -69,18 +69,18 @@ class HealthControllerUnitTest {
 
   @Test
   void testHealthCheck_ServiceUnavailable() {
-    // Simulate database connectivity failure
+
     doThrow(new DataAccessException("DB connection error") {
     }).when(jdbcTemplate).execute("SELECT 1");
 
     ResponseEntity<Void> response = healthController.healthCheck(request);
 
-    assertEquals(503, response.getStatusCodeValue()); // Check for SERVICE UNAVAILABLE status
+    assertEquals(503, response.getStatusCodeValue());
   }
 
   @Test
   void testMethodNotAllowed() {
-    // Simulating request using POST or other methods can be done here
+
     ResponseEntity<Void> response = healthController.methodNotAllowed();
 
     assertEquals(405, response.getStatusCodeValue());
