@@ -13,7 +13,7 @@
 #   4. Run `packer fmt`: Formats the Packer template to ensure consistency.
 #   5. Run `packer validate`: Validates the Packer template for any syntax or configuration issues.
 
-name: Packer Checks
+name: Packer Check
 
 on:
   pull_request_target:
